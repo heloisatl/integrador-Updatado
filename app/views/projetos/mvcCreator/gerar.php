@@ -11,7 +11,7 @@
 
     <div class="mvc-acoes" style="flex-wrap: wrap;">
         <button type="button" id="btn-gerar-final" onclick="executarGeracaoMvc();" class="mvc-etapa-botao" style="font-size: 16px; padding: 12px 24px;">
-            <?= $isVisitante ? '📦 Baixar Projeto (.ZIP)' : '🚀 Gerar Todo o Sistema (.ZIP)' ?>
+            <?= $isVisitante ? 'Baixar Projeto (.ZIP)' : 'Gerar Todo o Sistema (.ZIP)' ?>
         </button>
         <a href="?step=estrutura" id="btn-visualizar-estrutura" class="mvc-etapa-botao mvc-etapa-botao-secundario">
             Visualizar Estrutura
@@ -24,7 +24,7 @@
     </div>
 
     <!-- <div id="mvc-conclusao-geracao" style="display: none; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
-        <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--text);">✅ Projeto compilado com sucesso</h3>
+        <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--text);">Projeto compilado com sucesso</h3>
         <p id="mvc-conclusao-resumo" class="mvc-subtitulo" style="margin-bottom: 10px;"></p>
 
         <?php if ($isVisitante): ?>
@@ -36,14 +36,14 @@
 
         <div class="mvc-acoes" style="flex-wrap: wrap;">
             <button type="button" id="btn-baixar-novamente" onclick="baixarNovamenteZip();" class="mvc-etapa-botao">
-                ⬇️ Baixar Projeto (.ZIP)
+                Baixar Projeto (.ZIP)
             </button>
             <a href="?step=estrutura" class="mvc-etapa-botao mvc-etapa-botao-secundario">
-                📁 Visualizar Estrutura
+                Visualizar Estrutura
             </a>
             <?php if (!$isVisitante): ?>
                 <a href="<?= URL_BASE ?>/projetos/historico" class="mvc-etapa-botao mvc-etapa-botao-secundario">
-                    🕒 Salvar no Histórico
+                    Salvar no Histórico
                 </a>
             <?php endif; ?>
         </div>

@@ -78,7 +78,7 @@ $hostPadrao = $isLoopback ? 'localhost' : $clientIp;
                 <div class="mvc-botoes-banco">
                     <button type="button" onclick="carregarTabelas();" class="mvc-etapa-botao">Próxima Etapa →</button>
                     <?php if ($isVisitante): ?>
-                        <button type="button" onclick="carregarBanco();" class="mvc-etapa-botao mvc-etapa-botao-secundario" title="Recarregar esquemas do MySQL local">↻ Atualizar Bancos</button>
+                        <button type="button" onclick="carregarBanco();" class="mvc-etapa-botao mvc-etapa-botao-secundario" title="Recarregar esquemas do MySQL local"><i class="bi bi-arrow-repeat"></i> Atualizar Bancos</button>
                     <?php else: ?>
                         <button type="button" onclick="window.location.href='<?= URL_BASE ?>/projetos/phpmeuamigo'" class="mvc-etapa-botao">Criar novo banco</button>
                     <?php endif; ?>

@@ -565,8 +565,8 @@ function executarGeracaoMvc() {
     data.set('nomeProjeto', nomeProjeto);
 
     let btn = document.getElementById("btn-gerar-final");
-    const textoPadraoBtn = estaEmModoVisitante() ? "📦 Baixar Projeto (.ZIP)" : "🚀 Gerar Todo o Sistema (.ZIP)";
-    if (btn) btn.innerText = "⏳ Gerando projeto...";
+    const textoPadraoBtn = estaEmModoVisitante() ? "Baixar Projeto (.ZIP)" : "Gerar Todo o Sistema (.ZIP)";
+    if (btn) btn.innerText = "Gerando projeto...";
 
     let xhr = new XMLHttpRequest();
     xhr.open('POST', URL_BASE + '/projetos/gerarMvc', true);
