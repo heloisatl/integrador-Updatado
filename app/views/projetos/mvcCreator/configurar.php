@@ -25,7 +25,7 @@ $hostPadrao = $isLoopback ? 'localhost' : $clientIp;
         </div>
     <?php else: ?>
         <div class="mvc-aviso-info">
-            <span>As credenciais foram pré-carregadas das <strong>Configurações Globais</strong>. Informe o nome do projeto e selecione o banco de dados.</span>
+            <span>As credenciais foram pré-carregadas das <strong>Configurações Globais</strong> do módulo <a href="<?= URL_BASE ?>/projetos/phpmeuamigo" style="color: var(--accent); font-weight: 600; text-decoration: underline;">PHPMeuAmigo</a> e podem ser alteradas por lá, caso necessário. Informe o nome do projeto e selecione o banco de dados.</span>
         </div>
     <?php endif; ?>
 

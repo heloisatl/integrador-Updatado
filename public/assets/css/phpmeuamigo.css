@@ -227,8 +227,8 @@
     .phpma-aviso-permanente {
         padding: 14px 16px;
         font-size: 13px;
-        margin-top: 18px;
-        margin-bottom: 20px;
+        margin-top: 0;
+        margin-bottom: 16px;
     }
 
     .phpma-modal-content {
@@ -677,7 +677,7 @@
 .phpma-aviso-permanente {
     border-radius: 10px;
     padding: 16px 20px;
-    margin-top: 28px;
+    margin-top: 0;
     margin-bottom: 20px;
     background: rgba(91, 106, 240, 0.12);
     border: 1px solid #5B6AF0;

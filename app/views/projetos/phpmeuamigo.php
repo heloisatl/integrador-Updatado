@@ -57,6 +57,11 @@ $hostPadrao = $isLoopback ? 'localhost' : $clientIp;
             </div>
         </div>
 
+        <!-- Aviso Permanente de Modelagem (DevStudio Identity - Tom #5B6AF0) -->
+        <div class="phpma-aviso-permanente" role="note">
+            <strong>Ambiente de Modelagem do DevStudio:</strong> Ao criar ou importar um banco de dados, a estrutura de tabelas e atributos é armazenada no modelo do seu projeto. Quaisquer alterações realizadas aqui (criação, edição ou exclusão de tabelas e campos) <strong>não afetarão</strong> o banco de dados MySQL original da sua máquina local. Caso queira o banco atualizado, você pode <strong>baixar o script SQL atualizado</strong> diretamente pela ferramenta a qualquer momento através do botão <em>"Baixar SQL"</em>.
+        </div>
+
         <!-- Caixa de Alerta / Mensagens Inline do Sistema (DevStudio - Tom #5B6AF0) -->
         <div id="phpma-inline-alert" class="phpma-inline-alert" style="display: none;" role="alert">
             <div class="phpma-inline-alert-body">
@@ -133,11 +138,6 @@ $hostPadrao = $isLoopback ? 'localhost' : $clientIp;
                 </div>
 
             </section>
-        </div>
-
-        <!-- Aviso Permanente de Modelagem (DevStudio Identity - Tom #5B6AF0) -->
-        <div class="phpma-aviso-permanente" role="note">
-            <strong>Ambiente de Modelagem do DevStudio:</strong> Ao criar ou importar um banco de dados, a estrutura de tabelas e atributos é armazenada no modelo do seu projeto. Quaisquer alterações realizadas aqui (criação, edição ou exclusão de tabelas e campos) <strong>não afetarão</strong> o banco de dados MySQL original da sua máquina local.
         </div>
 
     </div>

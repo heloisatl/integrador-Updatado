@@ -537,9 +537,9 @@
 
     <?php
     // Link global para estilos públicos (migrados para public/assets/css)
-    $hrefGlobalStyle = defined('URL_BASE') ? (URL_BASE . '/assets/css/style.css') : '/assets/css/style.css';
+    $hrefGlobalStyle = defined('URL_BASE') ? (URL_BASE . '/assets/css/style.css?v=' . time()) : ('/assets/css/style.css?v=' . time());
     echo '<link rel="stylesheet" href="' . $hrefGlobalStyle . '">';
-    $hrefResponsiveStyle = defined('URL_BASE') ? (URL_BASE . '/assets/css/responsivo.css') : '/assets/css/responsivo.css';
+    $hrefResponsiveStyle = defined('URL_BASE') ? (URL_BASE . '/assets/css/responsivo.css?v=' . time()) : ('/assets/css/responsivo.css?v=' . time());
     echo '<link rel="stylesheet" href="' . $hrefResponsiveStyle . '">';
     ?>
 

@@ -6,7 +6,7 @@ body {
 
 .layout-wrapper,
 .main-content,
-.main-content > *,
+.main-content > *:not(.site-footer),
 .perfil-container,
 .perfil-formulario,
 .phpma-container,
@@ -177,7 +177,10 @@ code,
     body .site-footer {
         margin-left: -20px;
         margin-right: -20px;
+        margin-top: auto;
+        margin-bottom: 0;
         width: calc(100% + 40px);
+        max-width: none !important;
     }
 
     body .layout-wrapper {
@@ -288,7 +291,10 @@ code,
     body .site-footer {
         margin-left: -14px;
         margin-right: -14px;
+        margin-top: auto;
+        margin-bottom: 0;
         width: calc(100% + 28px);
+        max-width: none !important;
     }
 
     body .topbar {
@@ -360,7 +366,10 @@ code,
     body .site-footer {
         margin-left: -10px;
         margin-right: -10px;
+        margin-top: auto;
+        margin-bottom: 0;
         width: calc(100% + 20px);
+        max-width: none !important;
     }
 
     body .auth-card {

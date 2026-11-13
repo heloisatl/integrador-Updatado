@@ -29,7 +29,6 @@ include_once(__DIR__ . "/../include/navigation.php");
         'estrutura' => [
             'title' => 'Estrutura de Arquivos que Será Criada',
             'number' => '4',
-            'tag' => 'VISUALIZAÇÃO',
             'file' => __DIR__ . '/mvcCreator/estrutura.php',
         ],
         'gerar' => [
@@ -52,19 +51,11 @@ include_once(__DIR__ . "/../include/navigation.php");
                     <i class="bi bi-braces"></i> MVC Creator
                 </h1>
             </div>
-            <?php if ($modoVisitante): ?>
-                <div class="page-actions">
-                    <span class="mvc-etapa-selo-novo" style="background: rgba(91, 106, 240, 0.18); color: var(--accent); border: 1px solid rgba(91, 106, 240, 0.35);">MODO VISITANTE</span>
-                </div>
-            <?php endif; ?>
         </header>
 
         <div class="mvc-etapa-cabecalho">
             <span class="mvc-etapa-selo"><?= htmlspecialchars($steps[$step]['number']) ?></span>
             <h2><?= htmlspecialchars($steps[$step]['title']) ?></h2>
-            <?php if (!empty($steps[$step]['tag'])): ?>
-                <span class="mvc-etapa-selo-novo"><?= htmlspecialchars($steps[$step]['tag']) ?></span>
-            <?php endif; ?>
         </div>
 
         <div id="alerta-erro" class="alerta alerta-erro oculto" role="alert">
