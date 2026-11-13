@@ -255,7 +255,8 @@ include_once(__DIR__ . "/../include/navigation.php");
                 <button type="button" class="pm-botao" data-largura="320px">Celular (320 px)</button>
             </div>
             <button type="button" class="pm-botao" id="visualizarPrevia">Visualizar prévia</button>
-            <button type="button" class="pm-botao pm-botao-secundario" id="baixarZip">Baixar ZIP (HTML + CSS)</button>
+            <button type="button" class="pm-botao" id="salvarHistorico" style="background: var(--accent); color: #ffffff;"><i class="bi bi-bookmark-check"></i> Salvar no Histórico</button>
+            <button type="button" class="pm-botao pm-botao-secundario" id="baixarZip"><i class="bi bi-download"></i> Baixar ZIP (HTML + CSS)</button>
             <p id="pmHistoricoStatus" class="pm-status-historico" role="status" aria-live="polite"></p>
             <div class="pm-saida">
                 <label for="codeHTML">HTML gerado</label>

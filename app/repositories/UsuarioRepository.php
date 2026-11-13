@@ -48,6 +48,7 @@ class UsuarioRepository {
     public function deleteUsuario(int $id): bool {
         try {
             $this->connection->beginTransaction();
+            $this->connection->exec("SET FOREIGN_KEY_CHECKS = 0");
 
             // 1. Obter projetos vinculados ao usuário para limpeza de arquivos e estilos
             $stmtProj = $this->connection->prepare("SELECT id_projeto, fk_estilo, caminho_armazenamento FROM projeto WHERE id_usuario = :id");
@@ -85,7 +86,16 @@ class UsuarioRepository {
                 $this->connection->exec("DELETE FROM estilo WHERE id_estilo IN ($inQuery)");
             }
 
-            // 2. Deletar atributos, tabelas e bancos do usuário no PHPMeuAmigo
+            // 2. Desvincular auto-referências de Foreign Keys entre atributos do usuário no PHPMeuAmigo
+            $stmtNullAttr = $this->connection->prepare("UPDATE atributo a 
+                INNER JOIN tabela t ON a.fk_tabela = t.id_tabela 
+                INNER JOIN banco b ON t.fk_banco = b.id_banco 
+                SET a.fk_atributo = NULL 
+                WHERE b.fk_usuario = :id");
+            $stmtNullAttr->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmtNullAttr->execute();
+
+            // Deletar atributos, tabelas e bancos do usuário no PHPMeuAmigo
             $stmtDelAttr = $this->connection->prepare("DELETE a FROM atributo a 
                 INNER JOIN tabela t ON a.fk_tabela = t.id_tabela 
                 INNER JOIN banco b ON t.fk_banco = b.id_banco 
@@ -114,6 +124,7 @@ class UsuarioRepository {
             $sucesso = $stmtDelUser->execute();
 
             $this->connection->commit();
+            $this->connection->exec("SET FOREIGN_KEY_CHECKS = 1");
 
             // 5. Limpeza de arquivos físicos (avatares, histórico JSON e diretórios)
             $this->limparArquivosFisicosUsuario($id);
@@ -123,6 +134,7 @@ class UsuarioRepository {
             if ($this->connection->inTransaction()) {
                 $this->connection->rollBack();
             }
+            $this->connection->exec("SET FOREIGN_KEY_CHECKS = 1");
             error_log("Erro ao excluir usuário e dados vinculados: " . $e->getMessage());
             throw $e;
         }

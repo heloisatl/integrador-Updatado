@@ -924,7 +924,30 @@ class ProjetoController extends Controller{
             exit();
         }
 
-        if (($item['modulo'] ?? '') === 'PageMaker' && isset($payload['html'])) {
+        if (($item['modulo'] ?? '') === 'PageMaker' && ($_GET['arquivo'] ?? '') === 'zip') {
+            $html = (string) ($payload['html'] ?? '');
+            $css = (string) ($payload['css'] ?? '');
+            $nomeBase = preg_replace('/[^a-zA-Z0-9_\-]+/', '_', trim((string)($item['nome'] ?? 'pagina'))) ?: 'pagina';
+
+            $tempDir = __DIR__ . '/../projetos/temp/pm_zip_' . bin2hex(random_bytes(6));
+            @mkdir($tempDir, 0755, true);
+            $arquivoZip = $tempDir . '/' . $nomeBase . '.zip';
+
+            $zip = new \ZipArchive();
+            if ($zip->open($arquivoZip, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+                $zip->addFromString($nomeBase . '.html', $html);
+                if ($css !== '') {
+                    $zip->addFromString('estilo.css', $css);
+                }
+                $zip->close();
+
+                $geradorZip = new \app\tools\gerador\GeradorZip();
+                $geradorZip->enviarDownload($arquivoZip, $nomeBase . '.zip', true, $tempDir);
+                exit();
+            }
+        }
+
+        if (($item['modulo'] ?? '') === 'PageMaker' && (($_GET['arquivo'] ?? '') === 'html' || isset($payload['html']))) {
             $nomeArquivo = preg_replace('/[^a-zA-Z0-9_\-]+/', '_', trim((string)($item['nome'] ?? 'pagina'))) . '.html';
             header('Content-Type: text/html; charset=utf-8');
             header('Content-Disposition: attachment; filename="' . $nomeArquivo . '"');
@@ -1279,6 +1302,18 @@ class ProjetoController extends Controller{
             if (!$geradorZip->compactarPasta($pastaConteudo, $arquivoZip)) {
                 throw new \RuntimeException('Não foi possível criar o arquivo ZIP.');
             }
+
+            // Registra a criação da página no histórico do usuário
+            $this->registrarProjetoNoHistorico($nome, 'PageMaker', [
+                'nome'        => $nome,
+                'arquivo'     => $nome . '.html',
+                'html'        => $html,
+                'css'         => $css,
+                'gerado_em'   => date('c'),
+                'tipo'        => 'PageMaker',
+            ]);
+            \app\services\LogService::registrar("Geração e download de página PageMaker: " . $nome);
+
             $geradorZip->enviarDownload($arquivoZip, $nome . '.zip', true, $diretorioTemp);
         } catch (\Throwable $e) {
             $this->excluirDiretorioRecursivo($diretorioTemp);
@@ -1286,6 +1321,41 @@ class ProjetoController extends Controller{
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
         }
+    }
+
+    public function salvarPageMakerHistorico(): void {
+        $this->autenticacaoRequired();
+
+        $nome = trim((string) ($_POST['nomeArquivo'] ?? 'pagina'));
+        $nome = pathinfo($nome, PATHINFO_FILENAME);
+        $nome = preg_replace('/[^A-Za-z0-9_-]/', '', $nome) ?: 'pagina';
+        $html = $_POST['html'] ?? null;
+        $css = $_POST['css'] ?? null;
+
+        if (!is_string($html) || !is_string($css) || $html === '' || $css === '') {
+            http_response_code(400);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Gere a prévia antes de salvar no Histórico.']);
+            return;
+        }
+
+        $item = $this->registrarProjetoNoHistorico($nome, 'PageMaker', [
+            'nome'        => $nome,
+            'arquivo'     => $nome . '.html',
+            'html'        => $html,
+            'css'         => $css,
+            'gerado_em'   => date('c'),
+            'tipo'        => 'PageMaker',
+        ]);
+
+        \app\services\LogService::registrar("Página PageMaker salva no histórico: " . $nome);
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'sucesso'  => true,
+            'mensagem' => 'Página "' . $nome . '" salva no Histórico com sucesso!',
+            'item'     => $item
+        ]);
     }
 
     public function historico(): void {

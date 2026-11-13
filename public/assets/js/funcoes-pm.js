@@ -262,9 +262,64 @@ img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
         link.download = `${ler('nomeArquivo', 'pagina').replace(/[^A-Za-z0-9_-]/g, '') || 'pagina'}.zip`;
         link.click();
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-        buscar('pmHistoricoStatus').textContent = arquivoImagemSelecionado
-            ? 'ZIP baixado com HTML, CSS e imagem selecionada.'
-            : 'ZIP baixado com HTML e CSS.';
+        const statusEl = buscar('pmHistoricoStatus');
+        if (statusEl) {
+            statusEl.textContent = arquivoImagemSelecionado
+                ? 'ZIP baixado e projeto salvo no Histórico com sucesso (HTML, CSS e imagem)!'
+                : 'ZIP baixado e projeto salvo no Histórico com sucesso!';
+            statusEl.style.color = '#4ade80';
+        }
+    }
+
+    async function salvarNoHistorico() {
+        atualizarSaida();
+        const raiz = buscar('pageMaker');
+        const nomeArquivo = ler('nomeArquivo', 'pagina').replace(/[^A-Za-z0-9_-]/g, '') || 'pagina';
+        const html = gerarHtml(true);
+        const css = buscar('codeCSS').value;
+        const statusEl = buscar('pmHistoricoStatus');
+
+        if (!html || !css) {
+            if (statusEl) {
+                statusEl.textContent = 'Gere a prévia antes de salvar no Histórico.';
+                statusEl.style.color = '#f59e0b';
+            }
+            return;
+        }
+
+        if (statusEl) {
+            statusEl.textContent = 'Salvando projeto no Histórico...';
+            statusEl.style.color = 'var(--muted)';
+        }
+
+        const dados = new FormData();
+        dados.append('nomeArquivo', nomeArquivo);
+        dados.append('html', html);
+        dados.append('css', css);
+
+        try {
+            const resp = await fetch(`${raiz.dataset.urlBase}/projetos/pagemaker/salvar-historico`, {
+                method: 'POST',
+                body: dados
+            });
+            const res = await resp.json();
+            if (res.sucesso) {
+                if (statusEl) {
+                    statusEl.textContent = `Página "${nomeArquivo}" salva no Histórico com sucesso!`;
+                    statusEl.style.color = '#4ade80';
+                }
+            } else {
+                if (statusEl) {
+                    statusEl.textContent = res.mensagem || 'Não foi possível salvar no Histórico.';
+                    statusEl.style.color = '#ef4444';
+                }
+            }
+        } catch (err) {
+            if (statusEl) {
+                statusEl.textContent = 'Erro de comunicação ao salvar no Histórico.';
+                statusEl.style.color = '#ef4444';
+            }
+        }
     }
 
     function atualizarValores() {
@@ -289,6 +344,15 @@ img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
             atualizarSaida();
         });
         buscar('visualizarPrevia')?.addEventListener('click', atualizarSaida);
+        buscar('salvarHistorico')?.addEventListener('click', () => {
+            salvarNoHistorico().catch((erro) => {
+                const status = buscar('pmHistoricoStatus');
+                if (status) {
+                    status.textContent = erro.message;
+                    status.style.color = '#ef4444';
+                }
+            });
+        });
         buscar('baixarZip')?.addEventListener('click', () => {
             baixarZip().catch((erro) => {
                 const status = buscar('pmHistoricoStatus');

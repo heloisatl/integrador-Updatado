@@ -598,9 +598,10 @@ $historicoPorModulo = [
                                             </ul>
                                             <div class="historico-card-actions">
                                                 <?php if ($modulo === 'PageMaker'): ?>
-                                                    <a class="btn btn-secondary btn-sm" href="<?= URL_BASE ?>/projetos/historico/baixar?id=<?= urlencode((string)($item['id'] ?? '')) ?>&arquivo=html"><i class="bi bi-download"></i> Baixar HTML</a>
+                                                    <a class="btn btn-secondary btn-sm" href="<?= URL_BASE ?>/projetos/historico/baixar?id=<?= urlencode((string)($item['id'] ?? '')) ?>&arquivo=zip" title="Baixar ZIP completo"><i class="bi bi-file-earmark-zip"></i> Baixar ZIP</a>
+                                                    <a class="btn btn-secondary btn-sm" href="<?= URL_BASE ?>/projetos/historico/baixar?id=<?= urlencode((string)($item['id'] ?? '')) ?>&arquivo=html" title="Baixar código HTML"><i class="bi bi-download"></i> HTML</a>
                                                     <?php if (is_string($item['conteudo']['css'] ?? null) && $item['conteudo']['css'] !== ''): ?>
-                                                        <a class="btn btn-secondary btn-sm" href="<?= URL_BASE ?>/projetos/historico/baixar?id=<?= urlencode((string)($item['id'] ?? '')) ?>&arquivo=css"><i class="bi bi-file-earmark-code"></i> Baixar CSS</a>
+                                                        <a class="btn btn-secondary btn-sm" href="<?= URL_BASE ?>/projetos/historico/baixar?id=<?= urlencode((string)($item['id'] ?? '')) ?>&arquivo=css" title="Baixar folha de estilo CSS"><i class="bi bi-file-earmark-code"></i> CSS</a>
                                                     <?php endif; ?>
                                                 <?php else: ?>
                                                     <a class="btn btn-secondary btn-sm" href="<?= URL_BASE ?>/projetos/historico/baixar?id=<?= urlencode((string)($item['id'] ?? '')) ?>"><i class="bi bi-download"></i> Baixar Projeto</a>
