@@ -44,11 +44,14 @@ class ConnectionFactory {
 
         return $connection;
     }
-     public static function specialConn($dsn,$user,$pass){
-        // print $dsn;
-        $connection = new PDO($dsn, $user, $pass);
-        $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $connection->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+     public static function specialConn($dsn,$user,$pass, array $options = []){
+        // Timeout de conexão para evitar travamento caso o host na rede local esteja inacessível
+        $defaultOptions = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_TIMEOUT => 5,
+        ];
+        $connection = new PDO($dsn, $user, $pass, $options + $defaultOptions);
 
         return $connection;
     }

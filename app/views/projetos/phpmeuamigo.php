@@ -1,6 +1,10 @@
 <?php
 include_once(__DIR__ . "/../include/head.php");
 include_once(__DIR__ . "/../include/navigation.php");
+
+$clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+$isLoopback = in_array($clientIp, ['127.0.0.1', '::1', 'localhost'], true);
+$hostPadrao = $isLoopback ? 'localhost' : $clientIp;
 ?>
 
     <!-- Estilos de formulários globais e do PHPmeuamigo -->
@@ -173,7 +177,7 @@ include_once(__DIR__ . "/../include/navigation.php");
 
                 <div class="form-group">
                     <label for="modal-input-host-banco">Host (`host`)</label>
-                    <input type="text" id="modal-input-host-banco" value="localhost" placeholder="localhost">
+                    <input type="text" id="modal-input-host-banco" value="<?= htmlspecialchars($hostPadrao) ?>" placeholder="<?= htmlspecialchars($hostPadrao) ?>">
                 </div>
 
                 <div class="form-group">
@@ -209,7 +213,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             <div class="phpma-grid-fields">
                 <div class="form-group">
                     <label for="modal-input-import-host">Host</label>
-                    <input type="text" id="modal-input-import-host" value="localhost" placeholder="localhost">
+                    <input type="text" id="modal-input-import-host" value="<?= htmlspecialchars($hostPadrao) ?>" placeholder="<?= htmlspecialchars($hostPadrao) ?>">
                 </div>
 
                 <div class="form-group">
@@ -282,7 +286,10 @@ include_once(__DIR__ . "/../include/navigation.php");
 </div>
 
 <!-- Script de interatividade visual -->
-<script>window.URL_BASE = "<?= URL_BASE ?>";</script>
+<script>
+    window.URL_BASE = "<?= URL_BASE ?>";
+    window.PHPMA_DEFAULT_HOST = "<?= htmlspecialchars($hostPadrao) ?>";
+</script>
 <script src="<?= URL_BASE ?>/assets/js/phpmeuamigo.js"></script>
 </body>
 

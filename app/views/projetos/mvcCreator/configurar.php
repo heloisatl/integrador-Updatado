@@ -1,6 +1,8 @@
 <?php
 $isVisitante = empty($_SESSION['usuario_logado']);
-$hostname = gethostbyaddr($_SERVER['REMOTE_ADDR']);
+$clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+$isLoopback = in_array($clientIp, ['127.0.0.1', '::1', 'localhost'], true);
+$hostPadrao = $isLoopback ? 'localhost' : $clientIp;
 ?>
 
 
@@ -19,7 +21,7 @@ $hostname = gethostbyaddr($_SERVER['REMOTE_ADDR']);
 <div class="mvc-etapa">
     <?php if ($isVisitante): ?>
         <div class="mvc-aviso-info">
-            <span><strong>Modo Visitante:</strong> Os bancos de dados abaixo são lidos diretamente da sua instância MySQL local (<code><?= htmlspecialchars($hostname) ?>:3306</code>). Nenhum dado será salvo nos servidores do DevStudio.</span>
+            <span><strong>Modo Visitante:</strong> Os bancos de dados abaixo são lidos diretamente da sua instância MySQL local (<code><?= htmlspecialchars($hostPadrao) ?>:3306</code>). Nenhum dado será salvo nos servidores do DevStudio.</span>
         </div>
     <?php else: ?>
         <div class="mvc-aviso-info">
@@ -58,7 +60,7 @@ $hostname = gethostbyaddr($_SERVER['REMOTE_ADDR']);
 
             <div class="mvc-campo">
                 <label for="mvc_servidor">Host (`host`)</label>
-                <input type="text" oninput="salvarConfiguracoesSession(false)" id="mvc_servidor" name="mvc_servidor" value="<?= $hostname  ?>" placeholder="localhost">
+                <input type="text" oninput="salvarConfiguracoesSession(false)" id="mvc_servidor" name="mvc_servidor" value="<?= htmlspecialchars($hostPadrao) ?>" placeholder="<?= htmlspecialchars($hostPadrao) ?>">
             </div>
     
 

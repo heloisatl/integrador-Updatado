@@ -317,7 +317,8 @@ function bindEvents() {
     const btnConectarLocal = document.getElementById("phpma-btn-conectar-local");
     if (btnConectarLocal) {
         btnConectarLocal.addEventListener("click", async function () {
-            const host = document.getElementById("modal-input-import-host").value.trim() || 'localhost';
+            const defaultHost = window.PHPMA_DEFAULT_HOST || 'localhost';
+            const host = document.getElementById("modal-input-import-host").value.trim() || defaultHost;
             const porta = document.getElementById("modal-input-import-porta").value.trim() || '3306';
             const usr = document.getElementById("modal-input-import-usr").value.trim() || 'root';
             const pass = document.getElementById("modal-input-import-pass").value;
@@ -666,10 +667,11 @@ async function addNovoAtributo() {
 
 function abrirModalNovoBanco() {
     window.phpmaDismissAlert();
+    const defaultHost = window.PHPMA_DEFAULT_HOST || 'localhost';
     document.getElementById("modal-input-nome-banco").value = "";
     document.getElementById("modal-input-usr-banco").value = "root";
     document.getElementById("modal-input-pass-banco").value = "";
-    //document.getElementById("modal-input-host-banco").value = "localhost";
+    document.getElementById("modal-input-host-banco").value = defaultHost;
     document.getElementById("modal-input-porta-banco").value = "3306";
     document.getElementById("phpma-modal-banco").dataset.idBanco = "";
     document.getElementById("phpma-modal-banco").classList.add("open");
@@ -709,7 +711,8 @@ window.phpmaSaveBancoModal = async function () {
     const nome = document.getElementById("modal-input-nome-banco").value.trim();
     const usr = document.getElementById("modal-input-usr-banco").value.trim();
     const pass = document.getElementById("modal-input-pass-banco").value;
-    const host = document.getElementById("modal-input-host-banco").value.trim() || 'localhost';
+    const defaultHost = window.PHPMA_DEFAULT_HOST || 'localhost';
+    const host = document.getElementById("modal-input-host-banco").value.trim() || defaultHost;
     const porta = document.getElementById("modal-input-porta-banco").value.trim() || '3306';
 
     if (!nome) {
@@ -750,7 +753,8 @@ window.phpmaExecutarImportacaoLocal = async function () {
         return;
     }
 
-    const host = document.getElementById("modal-input-import-host").value.trim() || 'localhost';
+    const defaultHost = window.PHPMA_DEFAULT_HOST || 'localhost';
+    const host = document.getElementById("modal-input-import-host").value.trim() || defaultHost;
     const porta = document.getElementById("modal-input-import-porta").value.trim() || '3306';
     const usr = document.getElementById("modal-input-import-usr").value.trim() || 'root';
     const pass = document.getElementById("modal-input-import-pass").value;

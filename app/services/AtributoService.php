@@ -18,16 +18,12 @@ class AtributoService{
 
 
     public function insert($fk_tabela,$fk_atributo,$nome_atributo,$tipo,$PK,$NN,$AI,$UQ){
-        $result = null;
-        if($this->repo()->getAtributo($nome_atributo,'atributo.nome_atributo')){
-            if(!$this->repo()->getAtributosByFk_tabela($fk_tabela)){
-                $result = $this->repo()->insert($fk_tabela,$fk_atributo,$nome_atributo,$tipo,$PK,$NN,$AI,$UQ);
-            }
-        }else{
-            $result = $this->repo()->insert($fk_tabela,$fk_atributo,$nome_atributo,$tipo,$PK,$NN,$AI,$UQ);
+        // Validação de unicidade por tabela: impede atributos duplicados na MESMA tabela
+        if ($this->repo()->getAtributoByNomeETabela((string)$nome_atributo, (int)$fk_tabela)) {
+            return null;
         }
 
-        return $result;
+        return $this->repo()->insert($fk_tabela, $fk_atributo, $nome_atributo, $tipo, $PK, $NN, $AI, $UQ);
     }
 
     public function getAtributo($value, $param = "atributo.id_atributo"){

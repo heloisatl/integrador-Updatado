@@ -77,8 +77,14 @@ include_once(__DIR__ . "/../include/navigation.php");
 
     <?php require_once __DIR__ . '/../include/footer.php'; ?>
     </main>
+    <?php
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    $isLoopback = in_array($clientIp, ['127.0.0.1', '::1', 'localhost'], true);
+    $hostPadrao = $isLoopback ? 'localhost' : $clientIp;
+    ?>
     <script>
         window.MODO_VISITANTE = <?= $modoVisitante ? 'true' : 'false' ?>;
+        window.MVC_DEFAULT_HOST = <?= json_encode($hostPadrao) ?>;
     </script>
     <script src="<?= URL_BASE ?>/assets/js/arvoreArquivos.js"></script>
     <script src="<?= URL_BASE ?>/assets/js/mvcLoad.js"></script>

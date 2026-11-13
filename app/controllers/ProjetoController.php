@@ -51,8 +51,8 @@ class ProjetoController extends Controller{
     private function obterCredenciaisLocaisRequest(): array {
         $userPadrao = defined('DB_USER') ? DB_USER : 'root';
         $passPadrao = defined('DB_PASS') ? DB_PASS : '';
-        $host = trim((string) ($_POST['servidor'] ?? $_POST['host'] ?? $_POST['mvc_servidor'] ?? ''));
-        $host = $host !== '' ? $host : 'localhost';
+        $hostRaw = trim((string) ($_POST['servidor'] ?? $_POST['host'] ?? $_POST['mvc_servidor'] ?? ''));
+        $host = BancoService::resolverHostCliente($hostRaw);
         $porta = trim((string) ($_POST['porta'] ?? $_POST['mvc_porta'] ?? '3306')) ?: '3306';
 
         return [
@@ -134,6 +134,7 @@ class ProjetoController extends Controller{
             throw new \InvalidArgumentException('Selecione um banco de dados local válido antes de gerar o sistema.');
         }
 
+        $host = BancoService::resolverHostCliente($host);
         $dsn = "mysql:host={$host};port={$porta};dbname={$nomeBanco}";
         $schema = new SchemaInspector($dsn, $user, $pass);
         $tabelasRaw = $schema->getTabelas();
@@ -456,7 +457,7 @@ class ProjetoController extends Controller{
 
             $this->excluirDiretorioRecursivo($pastaOutput);
 
-            $downloadUrl = URL_BASE . '/projetos/downloadZip?file=' . urlencode($nomeZip);
+            $downloadUrl = URL_BASE . '/projetos/downloadZip?file=' . urlencode($nomeZip) . '&name=' . urlencode($nomeProjeto . '.zip');
             \app\services\LogService::registrar("Geração de sistema MVC Creator: " . $nomeProjeto);
             $this->registrarProjetoNoHistorico($nomeProjeto, 'MVC Creator', [
                 'nome'        => $nomeProjeto,
@@ -583,6 +584,17 @@ class ProjetoController extends Controller{
         $nomeZip = basename((string) ($_GET['file'] ?? 'projeto.zip'));
         $guestHash = preg_replace('/[^a-f0-9]/', '', (string) ($_GET['guest'] ?? ''));
 
+        // Nome do arquivo entregue ao usuário no download (remove o sufixo numérico de ID, ex: 'meu-projeto-30.zip' -> 'meu-projeto.zip')
+        $nomeDownload = trim((string) ($_GET['name'] ?? ''));
+        if ($nomeDownload !== '') {
+            $nomeDownload = basename($nomeDownload);
+            if (!str_ends_with(strtolower($nomeDownload), '.zip')) {
+                $nomeDownload .= '.zip';
+            }
+        } else {
+            $nomeDownload = preg_replace('/-\d+(\.zip)$/i', '$1', $nomeZip);
+        }
+
         $geradorZip = new \app\tools\gerador\GeradorZip();
 
         // Fluxo de download temporário para visitante: entrega via HTTP e apaga imediatamente do servidor
@@ -594,7 +606,7 @@ class ProjetoController extends Controller{
                 unset($_SESSION['guest_downloads'][$guestHash]);
             }
 
-            $geradorZip->enviarDownload($caminhoZip, $nomeZip, true, $pastaGuest);
+            $geradorZip->enviarDownload($caminhoZip, $nomeDownload, true, $pastaGuest);
             return;
         }
 
@@ -605,7 +617,7 @@ class ProjetoController extends Controller{
                 $caminhoZip = $caminhoPublic;
             }
         }
-        $geradorZip->enviarDownload($caminhoZip, $nomeZip, false);
+        $geradorZip->enviarDownload($caminhoZip, $nomeDownload, false);
     }
 
     private function getHistoricoUsuarioId(): int {

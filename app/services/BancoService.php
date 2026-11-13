@@ -45,13 +45,37 @@ class BancoService{
         }));
     }
 
-    public static function validarHostMysqlLocal(string $host): string {
-        $host = strtolower(trim($host));
-        if (!in_array($host, ['localhost', '127.0.0.1', '::1'], true)) {
-            throw new \InvalidArgumentException('A conexão de visitantes aceita apenas localhost, 127.0.0.1 ou ::1.');
+    /**
+     * Resolve o host para onde o MySQL deve se conectar.
+     * Se o usuário estiver acessando de outra máquina na rede local e o host informado
+     * for vazio, 'localhost', '127.0.0.1' ou '::1', redireciona para a máquina do cliente (REMOTE_ADDR),
+     * garantindo que os bancos sejam buscados da máquina do desenvolvedor e não do host servidor.
+     */
+    public static function resolverHostCliente(?string $host = null): string {
+        $host = trim((string) $host);
+        $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $isLoopback = in_array($clientIp, ['127.0.0.1', '::1', 'localhost'], true);
+
+        if (!$isLoopback && ($host === '' || in_array(strtolower($host), ['localhost', '127.0.0.1', '::1'], true))) {
+            return $clientIp;
         }
 
-        return $host;
+        return $host !== '' ? $host : 'localhost';
+    }
+
+    public static function validarHostMysqlLocal(string $host): string {
+        $hostResolvido = self::resolverHostCliente($host);
+        $hostLower = strtolower($hostResolvido);
+
+        // Permite loopback, IPs válidos (IPv4 / IPv6) e hostnames locais válidos
+        if (in_array($hostLower, ['localhost', '127.0.0.1', '::1'], true)
+            || filter_var($hostResolvido, FILTER_VALIDATE_IP)
+            || preg_match('/^[a-zA-Z0-9_\-\.]+$/', $hostResolvido)
+        ) {
+            return $hostResolvido;
+        }
+
+        throw new \InvalidArgumentException('Informe um endereço de host válido para o MySQL.');
     }
 
     public static function validarPortaMysqlLocal(string $porta): string {

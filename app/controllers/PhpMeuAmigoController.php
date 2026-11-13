@@ -56,7 +56,7 @@ class PhpMeuAmigoController extends Controller{
         $nome_banco    = trim($_POST['nome_banco'] ?? '');
         $usuario_banco = trim($_POST['usuario_banco'] ?? 'root');
         $senha_banco   = $_POST['senha_banco'] ?? '';
-        $host          = trim($_POST['host'] ?? 'localhost');
+        $host          = BancoService::resolverHostCliente(trim($_POST['host'] ?? ''));
         $porta         = trim($_POST['porta'] ?? '3306');
 
         // Nome do banco so aceita letras, numeros e underline
@@ -418,7 +418,7 @@ class PhpMeuAmigoController extends Controller{
         $userPadrao = defined('DB_USER') ? DB_USER : 'root';
         $passPadrao = defined('DB_PASS') ? DB_PASS : '';
 
-        $host  = trim($_POST['host'] ?? $_POST['servidor'] ?? $_POST['mvc_servidor'] ?? '') ?: 'localhost';
+        $host  = BancoService::resolverHostCliente(trim($_POST['host'] ?? $_POST['servidor'] ?? $_POST['mvc_servidor'] ?? ''));
         $porta = trim($_POST['porta'] ?? $_POST['mvc_porta'] ?? '') ?: '3306';
         $user  = trim($_POST['usuario'] ?? $_POST['mvc_usuario'] ?? '') ?: $userPadrao;
         $pass  = $_POST['senha'] ?? $_POST['mvc_senha'] ?? $passPadrao;
@@ -430,7 +430,7 @@ class PhpMeuAmigoController extends Controller{
             echo json_encode(['sucesso' => true, 'bancos' => $bancos_filtrados]);
         } catch (\Exception $e) {
             header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['sucesso' => false, 'mensagem' => 'Erro ao conectar ao MySQL local: ' . $e->getMessage()]);
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Erro ao conectar ao MySQL (' . $host . ':' . $porta . '): ' . $e->getMessage()]);
         }
     }
 
@@ -438,7 +438,7 @@ class PhpMeuAmigoController extends Controller{
         $this->autenticacaoJsonRequired();
 
         $id_usuario        = $_SESSION['usuario_logado']->getIdUsuario();
-        $host              = trim($_POST['host'] ?? 'localhost');
+        $host              = BancoService::resolverHostCliente(trim($_POST['host'] ?? ''));
         $porta             = trim($_POST['porta'] ?? '3306');
         $user              = trim($_POST['usuario'] ?? 'root');
         $pass              = $_POST['senha'] ?? '';
@@ -499,16 +499,24 @@ class PhpMeuAmigoController extends Controller{
 
                 // 1.2 Mapeia atributos ja existentes nesta tabela no banco do sistema (para pular os ja criados)
                 $atributosExistentes = $this->atributoService->getAtributosRawByFk_tabela($id_tabela);
-                $nomesExistentes     = array_column($atributosExistentes, 'id_atributo', 'nome_atributo');
+                $nomesExistentes     = [];
+                foreach ($atributosExistentes as $ae) {
+                    if (!empty($ae['nome_atributo'])) {
+                        $nomesExistentes[strtolower((string)$ae['nome_atributo'])] = true;
+                    }
+                }
 
                 // 1.3 Puxa as colunas fisicas inspecionadas do MySQL
                 $colunas = $schema->getAtributos($nome_tabela);
 
                 foreach ($colunas as $col) {
-                    $nomeCampo = $col['Field'];
+                    $nomeCampo = $col['Field'] ?? '';
+                    if ($nomeCampo === '') {
+                        continue;
+                    }
 
-                    // Pula o atributo se ele ja estiver cadastrado no sistema
-                    if (isset($nomesExistentes[$nomeCampo])) {
+                    // Pula o atributo se ele ja estiver cadastrado nesta tabela
+                    if (isset($nomesExistentes[strtolower($nomeCampo)])) {
                         continue;
                     }
 
@@ -519,7 +527,7 @@ class PhpMeuAmigoController extends Controller{
 
                     $PK = (isset($col['Key'])   && $col['Key']  === 'PRI') ? 1 : 0;
                     $NN = (isset($col['Null'])  && $col['Null'] === 'NO')  ? 1 : 0;
-                    $AI = (isset($col['Extra']) && str_contains(strtolower($col['Extra']), 'auto_increment')) ? 1 : 0;
+                    $AI = (isset($col['Extra']) && str_contains(strtolower((string)$col['Extra']), 'auto_increment')) ? 1 : 0;
                     $UQ = (isset($col['Key'])   && $col['Key']  === 'UNI') ? 1 : 0;
 
                     // Cria o atributo SEM fk_atributo por enquanto (garante insercao sem violacao de FK)

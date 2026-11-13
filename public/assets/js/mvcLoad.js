@@ -7,25 +7,38 @@ document.addEventListener("DOMContentLoaded", function () {
     if(!isVisitante || sessionStorage.getItem('mvc_senha')!="")carregarBanco();
     salvarConfiguracoesSession(false);
 
+    let inputProjeto = document.getElementById("nomeProjeto");
+    if (inputProjeto) {
+        inputProjeto.addEventListener("input", function () {
+            sessionStorage.setItem("mvc_nomeProjeto", this.value.trim());
+        });
+        inputProjeto.addEventListener("change", function () {
+            sessionStorage.setItem("mvc_nomeProjeto", this.value.trim());
+        });
+    }
+
     let banco = document.getElementById("banco");
     let srv = document.getElementById("mvc_servidor");
     let porta = document.getElementById("mvc_porta");
     let usr = document.getElementById("mvc_usuario");
     let pass = document.getElementById("mvc_senha");
-    if(srv) srv.addEventListener("change",salvarConfiguracoesSession(false));
-    if(porta) porta.addEventListener("change",salvarConfiguracoesSession(false));
-    if(usr) usr.addEventListener("change",salvarConfiguracoesSession(false));
-    if(pass) pass.addEventListener("change",salvarConfiguracoesSession(false));
+    if(srv) srv.addEventListener("change", () => salvarConfiguracoesSession(false));
+    if(porta) porta.addEventListener("change", () => salvarConfiguracoesSession(false));
+    if(usr) usr.addEventListener("change", () => salvarConfiguracoesSession(false));
+    if(pass) pass.addEventListener("change", () => salvarConfiguracoesSession(false));
     if (banco) {
         banco.addEventListener("change", function () {
-            let nomeProjeto = document.getElementById("nomeProjeto") ? document.getElementById("nomeProjeto").value : "";
-            let srv = document.getElementById("mvc_servidor") ? document.getElementById("mvc_servidor").value : "localhost";
+            let inputNome = document.getElementById("nomeProjeto");
+            if (inputNome && inputNome.value.trim()) {
+                sessionStorage.setItem("mvc_nomeProjeto", inputNome.value.trim());
+            }
+            const defaultHost = window.MVC_DEFAULT_HOST || "localhost";
+            let srv = document.getElementById("mvc_servidor") ? document.getElementById("mvc_servidor").value : (sessionStorage.getItem("mvc_servidor") || defaultHost);
             let porta = document.getElementById("mvc_porta") ? document.getElementById("mvc_porta").value : "3306";
             let usr = document.getElementById("mvc_usuario") ? document.getElementById("mvc_usuario").value : "root";
             let pass = document.getElementById("mvc_senha") ? document.getElementById("mvc_senha").value : "";
             let bancoVal = document.getElementById("banco") ? document.getElementById("banco").value : "";
 
-            if (nomeProjeto) sessionStorage.setItem("mvc_nomeProjeto", nomeProjeto);
             if (srv) sessionStorage.setItem("mvc_servidor", srv);
             if (porta) sessionStorage.setItem("mvc_porta", porta);
             if (usr) sessionStorage.setItem("mvc_usuario", usr);
@@ -83,21 +96,37 @@ function escaparAtributoHtml(valor) {
 }
 
 function salvarConfiguracoesSession(dispararTabelas = false) {
-    let nomeProjeto = document.getElementById("nomeProjeto") ? document.getElementById("nomeProjeto").value : "";
-    let srv = document.getElementById("mvc_servidor") ? document.getElementById("mvc_servidor").value : (sessionStorage.getItem("mvc_servidor"));
-    let porta = document.getElementById("mvc_porta") ? document.getElementById("mvc_porta").value : (sessionStorage.getItem("mvc_porta"));
-    let usr = document.getElementById("mvc_usuario") ? document.getElementById("mvc_usuario").value : (sessionStorage.getItem("mvc_usuario"));
-    let pass = document.getElementById("mvc_senha") ? document.getElementById("mvc_senha").value : (sessionStorage.getItem("mvc_senha"));
-    let banco = document.getElementById("banco") ? document.getElementById("banco").value : "";
-    
-    if (nomeProjeto !== undefined) sessionStorage.setItem("mvc_nomeProjeto", nomeProjeto);
-    if (srv !== undefined) sessionStorage.setItem("mvc_servidor", srv);
-    if (porta !== undefined) sessionStorage.setItem("mvc_porta", porta);
-    if (usr !== undefined) sessionStorage.setItem("mvc_usuario", usr);
-    if (pass !== undefined) sessionStorage.setItem("mvc_senha", pass);
-    if (banco) sessionStorage.setItem("mvc_banco", banco);
-    if (sessionStorage.getItem("mvc_tabelas") === "[]") sessionStorage.removeItem("mvc_banco");
+    let elNome = document.getElementById("nomeProjeto");
+    let elSrv = document.getElementById("mvc_servidor");
+    let elPorta = document.getElementById("mvc_porta");
+    let elUsr = document.getElementById("mvc_usuario");
+    let elPass = document.getElementById("mvc_senha");
+    let elBanco = document.getElementById("banco");
 
+    // Só atualiza os itens no sessionStorage se os respectivos campos existirem no DOM da etapa atual
+    if (elNome) {
+        sessionStorage.setItem("mvc_nomeProjeto", elNome.value.trim());
+    }
+    if (elSrv) {
+        sessionStorage.setItem("mvc_servidor", elSrv.value.trim());
+    }
+    if (elPorta) {
+        sessionStorage.setItem("mvc_porta", elPorta.value.trim());
+    }
+    if (elUsr) {
+        sessionStorage.setItem("mvc_usuario", elUsr.value.trim());
+    }
+    if (elPass) {
+        sessionStorage.setItem("mvc_senha", elPass.value);
+    }
+    if (elBanco && elBanco.value) {
+        sessionStorage.setItem("mvc_banco", elBanco.value);
+    }
+    if (sessionStorage.getItem("mvc_tabelas") === "[]") {
+        sessionStorage.removeItem("mvc_banco");
+    }
+
+    let banco = elBanco ? elBanco.value : (sessionStorage.getItem("mvc_banco") || "");
     if (dispararTabelas && banco) {
         carregarTabelas(false);
     }
@@ -107,8 +136,16 @@ function restaurarValoresFormulario() {
     if (document.getElementById("nomeProjeto") && sessionStorage.getItem("mvc_nomeProjeto")) {
         document.getElementById("nomeProjeto").value = sessionStorage.getItem("mvc_nomeProjeto");
     }
-    if (document.getElementById("mvc_servidor") && sessionStorage.getItem("mvc_servidor")) {
-        document.getElementById("mvc_servidor").value = sessionStorage.getItem("mvc_servidor");
+    const inputServidor = document.getElementById("mvc_servidor");
+    if (inputServidor) {
+        const defaultHost = window.MVC_DEFAULT_HOST || "localhost";
+        const salvo = sessionStorage.getItem("mvc_servidor");
+        if (salvo && (defaultHost === "localhost" || salvo !== "localhost")) {
+            inputServidor.value = salvo;
+        } else {
+            inputServidor.value = defaultHost;
+            sessionStorage.setItem("mvc_servidor", defaultHost);
+        }
     }
     if (document.getElementById("mvc_porta") && sessionStorage.getItem("mvc_porta")) {
         document.getElementById("mvc_porta").value = sessionStorage.getItem("mvc_porta");
@@ -146,8 +183,13 @@ function carregarBanco() {
 
     salvarConfiguracoesSession(false);
 
+    const defaultHost = window.MVC_DEFAULT_HOST || "localhost";
     let selecionado = sessionStorage.getItem("mvc_banco") || elBanco.value || "";
-    let srv = sessionStorage.getItem("mvc_servidor") || "localhost";
+    let srv = sessionStorage.getItem("mvc_servidor");
+    if (!srv || (defaultHost !== "localhost" && srv === "localhost")) {
+        srv = defaultHost;
+        sessionStorage.setItem("mvc_servidor", srv);
+    }
     let porta = sessionStorage.getItem("mvc_porta") || "3306";
     let usr = sessionStorage.getItem("mvc_usuario") || "root";
     let pass = sessionStorage.getItem("mvc_senha") || "";
@@ -259,6 +301,27 @@ function carregarTabelas(salvarConfig = true) {
         sessionStorage.setItem('mvc_tabelasDisabled', "[]");
     }
 
+    let elNomeProjeto = document.getElementById("nomeProjeto");
+    let nomeProjeto = elNomeProjeto ? elNomeProjeto.value.trim() : (sessionStorage.getItem("mvc_nomeProjeto") || "");
+
+    if (salvarConfig) {
+        if (!nomeProjeto) {
+            mostrarErro("Informe o nome do projeto antes de avançar.", "aviso");
+            if (elNomeProjeto) elNomeProjeto.focus();
+            return;
+        }
+        if (/\s/.test(nomeProjeto)) {
+            mostrarErro("O nome do projeto não deve conter espaços.", "aviso");
+            if (elNomeProjeto) elNomeProjeto.focus();
+            return;
+        }
+        if (!/^[A-Za-z0-9_-]+$/.test(nomeProjeto)) {
+            mostrarErro('O nome do projeto deve conter apenas letras, números, "_" e "-".', "aviso");
+            if (elNomeProjeto) elNomeProjeto.focus();
+            return;
+        }
+    }
+
     let elBanco = document.getElementById("banco");
     let banco = (elBanco && elBanco.value) ? elBanco.value : (sessionStorage.getItem("mvc_banco") || "");
 
@@ -271,9 +334,10 @@ function carregarTabelas(salvarConfig = true) {
 
     fecharAlerta();
 
+    const defaultHost = window.MVC_DEFAULT_HOST || "localhost";
     const data = new FormData();
     data.append('banco', banco);
-    data.append('servidor', sessionStorage.getItem("mvc_servidor") || "localhost");
+    data.append('servidor', sessionStorage.getItem("mvc_servidor") || defaultHost);
     data.append('porta', sessionStorage.getItem("mvc_porta") || "3306");
     data.append('usuario', sessionStorage.getItem("mvc_usuario") || "root");
     data.append('senha', sessionStorage.getItem("mvc_senha") || "");
@@ -411,13 +475,15 @@ function renderizarTabelasSeExistirem() {
 
 // Escolhas do usuário (tabelas, camadas e RN 06) enviadas tanto à pré-visualização quanto à geração.
 function montarDadosEscolhas() {
+    const defaultHost = window.MVC_DEFAULT_HOST || "localhost";
     const data = new FormData();
+    data.append('nomeProjeto', (sessionStorage.getItem("mvc_nomeProjeto") || "").trim() || "meu_projeto");
     data.append('banco', sessionStorage.getItem("mvc_banco") || "");
     data.append('tabelasDesativadas', sessionStorage.getItem("mvc_tabelasDisabled") || "");
     data.append('camadasDesativadas', sessionStorage.getItem("mvc_camadasDisabled") || "");
     data.append('semBancoLocal', obterSemBancoLocal() ? '1' : '0');
     data.append('comentarios', obterComentariosDidaticos() ? '1' : '0');
-    data.append('servidor', sessionStorage.getItem("mvc_servidor") || "localhost");
+    data.append('servidor', sessionStorage.getItem("mvc_servidor") || defaultHost);
     data.append('porta', sessionStorage.getItem("mvc_porta") || "3306");
     data.append('usuario', sessionStorage.getItem("mvc_usuario") || "root");
     data.append('senha', sessionStorage.getItem("mvc_senha") || "");
@@ -486,7 +552,7 @@ function renderizarEstruturaArquivos() {
 }
 
 function executarGeracaoMvc() {
-    let nomeProjeto = sessionStorage.getItem("mvc_nomeProjeto") || "meu_projeto";
+    let nomeProjeto = (sessionStorage.getItem("mvc_nomeProjeto") || "").trim() || "meu_projeto";
 
     if (obterTabelasSelecionadas().length === 0) {
         mostrarErro("Selecione ao menos uma tabela para gerar o projeto.", "aviso");
@@ -496,7 +562,7 @@ function executarGeracaoMvc() {
     fecharAlerta();
 
     const data = montarDadosEscolhas();
-    data.append('nomeProjeto', nomeProjeto);
+    data.set('nomeProjeto', nomeProjeto);
 
     let btn = document.getElementById("btn-gerar-final");
     const textoPadraoBtn = estaEmModoVisitante() ? "📦 Baixar Projeto (.ZIP)" : "🚀 Gerar Todo o Sistema (.ZIP)";

@@ -36,6 +36,14 @@ class AtributoRepository{
         $stm->execute([$value]);
         return $stm->fetchAll(PDO::FETCH_NUM);
     }
+
+    public function getAtributoByNomeETabela(string $nome, int $id_tabela): ?array {
+        $sql = "SELECT * FROM atributo WHERE LOWER(nome_atributo) = LOWER(?) AND fk_tabela = ? LIMIT 1;";
+        $stm = $this->conn->prepare($sql);
+        $stm->execute([$nome, $id_tabela]);
+        $res = $stm->fetch(PDO::FETCH_ASSOC);
+        return $res ?: null;
+    }
     
     public function getAllAtributos(){
         $sql = "SELECT * from atributo";       
