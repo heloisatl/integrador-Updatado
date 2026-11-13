@@ -264,6 +264,7 @@ function bindEvents() {
 
     const btnNovoBanco = document.getElementById("phpma-btn-novo-banco");
     const btnConfigBanco = document.getElementById("phpma-btn-config-banco");
+    const btnExportarSql = document.getElementById("phpma-btn-exportar-sql");
     const btnNovaTabela  = document.getElementById("phpma-btn-nova-tabela");
     const btnAddAtributo = document.getElementById("phpma-btn-add-atributo");
     const wrapperNovaTab = document.getElementById("phpma-wrapper-nova-tabela");
@@ -273,6 +274,7 @@ function bindEvents() {
 
     if (btnNovoBanco) btnNovoBanco.addEventListener("click", abrirModalNovoBanco);
     if (btnConfigBanco) btnConfigBanco.addEventListener("click", abrirModalConfigBanco);
+    if (btnExportarSql) btnExportarSql.addEventListener("click", window.phpmaExportarSql);
 
     // Controle do formulário inline padronizado de criação de tabelas (sem prompt nativo)
     if (btnNovaTabela && wrapperNovaTab) {
@@ -843,6 +845,17 @@ window.phpmaConfirmarExclusaoBanco = async function () {
     } catch (err) {
         phpmaToast("Erro de conexao ao tentar excluir banco de dados.", "error");
     }
+};
+
+window.phpmaExportarSql = function () {
+    if (!state.activeBancoId) {
+        phpmaToast("Selecione um banco de dados antes de baixar o script SQL!", "warning");
+        return;
+    }
+
+    phpmaToast("Gerando script SQL atualizado do banco...", "info");
+    const downloadUrl = apiEndpoint(`/phpmeuamigo/exportar-sql?id_banco=${encodeURIComponent(state.activeBancoId)}`);
+    window.location.href = downloadUrl;
 };
 
 // --- UTIL ---

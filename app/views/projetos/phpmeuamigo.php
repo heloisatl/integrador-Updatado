@@ -48,7 +48,7 @@ $hostPadrao = $isLoopback ? 'localhost' : $clientIp;
                 <button type="button" id="phpma-btn-config-banco" class="btn btn-secondary" title="Configurações do Banco (Host, Usuário, Senha)">
                     <i class="bi bi-gear-fill"></i> Configurações
                 </button>
-                <button type="button" id="phpma-btn-exportar-sql" class="btn btn-secondary" title="Gerar e baixar o arquivo .sql atualizado deste banco">
+                <button type="button" id="phpma-btn-exportar-sql" class="btn btn-secondary" onclick="window.phpmaExportarSql()" title="Gerar e baixar o arquivo .sql atualizado deste banco">
                     <i class="bi bi-download"></i> Baixar SQL
                 </button>
                 <button type="button" id="phpma-btn-excluir-banco" class="btn btn-secondary" style="color:#ff6b6b; border-color:rgba(255,107,107,0.3);" onclick="window.phpmaDeleteBancoActive()" title="Excluir Banco de Dados do DevStudio">

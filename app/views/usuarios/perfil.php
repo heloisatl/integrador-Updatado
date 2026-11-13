@@ -12,6 +12,7 @@ $csrfPerfil = $csrfPerfil ?? '';
 $ehAdmin = $ehAdmin ?? false;
 ?>
 
+<link rel="stylesheet" href="<?= URL_BASE ?>/assets/css/usuarios.css?v=<?= time() ?>">
 <link rel="stylesheet" href="<?= URL_BASE ?>/assets/css/perfil.css?v=<?= time() ?>">
 
 <div class="perfil-container">
@@ -123,76 +124,77 @@ $ehAdmin = $ehAdmin ?? false;
             <div class="perfil-acoes">
                 <a href="<?= URL_BASE ?>/projetos" class="perfil-btn-voltar"><i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar ao início</a>
                 <button type="submit" class="perfil-btn-salvar"><i class="bi bi-check2-circle" aria-hidden="true"></i> Salvar alterações</button>
+                <button type="button" class="perfil-btn-excluir" id="btnAbrirModalExcluirConta" title="Excluir minha conta do DevStudio"><i class="bi bi-trash3"></i> Excluir conta</button>
             </div>
         </form>
-
-        <!-- Zona de Perigo: Exclusão de Conta -->
-        <section class="perfil-card perfil-card-perigo" style="border: 1px solid rgba(239, 68, 68, 0.35); margin-top: 28px; background: rgba(239, 68, 68, 0.04);">
-            <div class="perfil-secao-cabecalho">
-                <span class="perfil-secao-icone" style="color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.25);">
-                    <i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i>
-                </span>
-                <div>
-                    <h2 style="color: #ef4444;">Excluir Conta</h2>
-                    <p>Encerre sua conta e remova permanentemente seus dados do DevStudio.</p>
-                </div>
-            </div>
-
-            <?php if ($ehAdmin): ?>
-                <div style="margin-top: 14px; padding: 12px 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; color: var(--muted); display: flex; align-items: flex-start; gap: 10px;">
-                    <i class="bi bi-shield-lock-fill" style="color: var(--accent); font-size: 16px; flex-shrink: 0; margin-top: 2px;"></i>
-                    <span><strong>Conta de Administrador Conectada:</strong> A conta de administrador atualmente conectada não pode ser excluída por questões de integridade do sistema.</span>
-                </div>
-            <?php else: ?>
-                <p style="color: var(--muted); font-size: 13.5px; margin: 12px 0 16px; line-height: 1.5;">
-                    Ao excluir sua conta, todos os seus dados vinculados (projetos gerados, modelagens no PHPMeuAmigo, arquivos e histórico) serão <strong>permanentemente apagados</strong>. <strong>Esta ação é irreversível.</strong>
-                </p>
-                <button type="button" class="btn btn-danger" id="btnAbrirModalExcluirConta" style="background: #ef4444; border-color: #dc2626; color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                    <i class="bi bi-trash3-fill"></i> Excluir Minha Conta
-                </button>
-            <?php endif; ?>
-        </section>
     </div>
 
-    <!-- Modal de Confirmação de Exclusão de Conta Própria DevStudio -->
-    <?php if (!$ehAdmin): ?>
-    <div id="modalExcluirContaPropria" class="perfil-modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modalExcluirContaTitulo">
-        <div class="perfil-modal-dialog">
-            <div class="perfil-modal-header" style="border-bottom-color: rgba(239, 68, 68, 0.3);">
-                <h3 id="modalExcluirContaTitulo" class="perfil-modal-title" style="color: #ef4444;">
-                    <i class="bi bi-person-x-fill"></i> Confirmar Exclusão Definitiva
+    <!-- Modal de Confirmação de Exclusão de Conta (Padrão do Sistema DevStudio) -->
+    <div id="modalExcluirContaPropria" class="usuario-modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modalExcluirContaTitulo">
+        <div class="usuario-modal-dialog">
+            <div class="usuario-modal-header">
+                <h3 id="modalExcluirContaTitulo" class="usuario-modal-title">
+                    <i class="bi bi-person-x-fill"></i> Confirmar Exclusão
                 </h3>
-                <button type="button" class="perfil-modal-close" id="btnFecharModalExcluirConta" aria-label="Fechar modal">
+                <button type="button" class="usuario-modal-close" id="btnFecharModalExcluirConta" aria-label="Fechar modal">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
 
-            <div class="perfil-modal-body">
-                <div class="perfil-modal-warning" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.35); color: #f87171;">
-                    <i class="bi bi-exclamation-triangle-fill" style="color: #ef4444; font-size: 20px;"></i>
-                    <div style="color: var(--text);">
-                        <strong style="color: #ef4444;">Ação Estritamente Irreversível:</strong> Tem certeza que deseja encerrar e excluir sua conta no DevStudio? Todos os seus projetos, bancos de dados modelados, atributos, arquivos e histórico de atividades serão permanentemente apagados.
+            <div class="usuario-modal-body">
+                <?php if ($ehAdmin): ?>
+                    <!-- Bloqueio de auto-exclusão para administrador logado -->
+                    <div class="usuario-modal-alert-bloqueado">
+                        <i class="bi bi-shield-lock-fill"></i>
+                        <div>
+                            <strong>Ação Bloqueada:</strong> Você está conectado nesta conta de administrador e não pode excluir o seu próprio usuário.
+                        </div>
                     </div>
-                </div>
-                <p style="font-size: 13.5px; color: var(--muted); margin-top: 14px; line-height: 1.5;">
-                    Uma vez confirmada, a sua sessão será imediatamente encerrada e você não poderá recuperar nenhuma informação vinculada à conta.
-                </p>
+                <?php else: ?>
+                    <!-- Card com os dados do usuário a ser excluído -->
+                    <div class="usuario-modal-card">
+                        <div class="usuario-modal-avatar">
+                            <?php if ($avatarUrl): ?>
+                                <img src="<?= htmlspecialchars($avatarUrl, ENT_QUOTES, 'UTF-8') ?>" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                            <?php else: ?>
+                                <i class="bi bi-person-fill"></i>
+                            <?php endif; ?>
+                        </div>
+                        <div class="usuario-modal-info">
+                            <div class="usuario-modal-nome"><?= htmlspecialchars($nomeUsuario, ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="usuario-modal-email"><?= htmlspecialchars($emailUsuario, ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="usuario-modal-meta">
+                                <span class="usuario-badge-id">Minha Conta</span>
+                                <span class="badge-perfil badge-perfil-usuario">USUÁRIO</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Aviso de confirmação de exclusão irreversível -->
+                    <div class="usuario-modal-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div>
+                            <strong>Ação Estritamente Irreversível:</strong> Tem certeza que deseja excluir permanentemente sua conta da plataforma? Esta ação é <strong>irreversível</strong> e removerá <strong>todos os seus dados vinculados</strong> (projetos gerados, modelagens no PHPMeuAmigo, arquivos e histórico).
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
 
-            <div class="perfil-modal-footer">
+            <div class="usuario-modal-footer">
                 <button type="button" class="btn btn-secondary" id="btnCancelarModalExcluirConta">
-                    Cancelar
+                    <?= $ehAdmin ? 'Fechar' : 'Cancelar' ?>
                 </button>
+                <?php if (!$ehAdmin): ?>
                 <form method="POST" action="<?= URL_BASE ?>/perfil/excluir" style="display: inline-flex; margin: 0;">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfPerfil, ENT_QUOTES, 'UTF-8') ?>">
-                    <button type="submit" class="btn btn-danger" style="background: #ef4444; border-color: #dc2626; color: #fff;">
-                        <i class="bi bi-trash3-fill"></i> Sim, Excluir Minha Conta Permanentemente
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3"></i> Sim, Excluir Minha Conta
                     </button>
                 </form>
+                <?php endif; ?>
             </div>
         </div>
     </div>
-    <?php endif; ?>
 
     <!-- Modal de Confirmação de Alterações Sensíveis no Perfil DevStudio -->
     <div id="modalConfirmarPerfil" class="perfil-modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modalConfirmarPerfilTitulo">

@@ -98,6 +98,8 @@ $router->get("/phpmeuamigo/atributos", "PhpMeuAmigoController@listarAtributos");
 $router->post("/phpmeuamigo/atributos/salvar", "PhpMeuAmigoController@salvarAtributo");
 $router->post("/phpmeuamigo/atributos/excluir", "PhpMeuAmigoController@excluirAtributo");
 $router->post("/phpmeuamigo/importar-sql", "PhpMeuAmigoController@importarSql");
+$router->get("/phpmeuamigo/exportar-sql", "PhpMeuAmigoController@exportarSql");
+$router->post("/phpmeuamigo/exportar-sql", "PhpMeuAmigoController@exportarSql");
 $router->post("/phpmeuamigo/conectar-mysql-local", "PhpMeuAmigoController@conectarMysqlLocal");
 $router->post("/phpmeuamigo/importar-banco-local", "PhpMeuAmigoController@importarBancoLocal");
 

@@ -653,14 +653,17 @@ class PhpMeuAmigoController extends Controller{
         }
 
         try {
-            $id_usuario = $_SESSION['usuario_logado']->getIdUsuario();
-            session_write_close();
+            $usuario = $_SESSION['usuario_logado'];
+            $id_usuario = is_object($usuario) && method_exists($usuario, 'getIdUsuario')
+                ? (int) $usuario->getIdUsuario()
+                : (is_array($usuario) ? (int) ($usuario['id_usuario'] ?? 1) : 1);
+
             $resultado  = $this->sqlExporterService->exportarSql($id_banco, $id_usuario);
 
             $nomeArquivo = $resultado['nome_arquivo'];
             $conteudoSql = $resultado['conteudo_sql'];
 
-            LogService::registrar("Exportação de script SQL do banco: " . $nomeArquivo);
+            LogService::registrar("Exportação de script SQL do banco: " . $nomeArquivo, $id_usuario);
 
             header('Content-Description: File Transfer');
             header('Content-Type: application/sql; charset=utf-8');
