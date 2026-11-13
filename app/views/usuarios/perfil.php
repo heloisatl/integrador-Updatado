@@ -9,6 +9,7 @@ $avatarUrl = $avatarUrl ?? null;
 $mensagemPerfil = $mensagemPerfil ?? '';
 $tipoMensagemPerfil = $tipoMensagemPerfil ?? 'sucesso';
 $csrfPerfil = $csrfPerfil ?? '';
+$ehAdmin = $ehAdmin ?? false;
 ?>
 
 <link rel="stylesheet" href="<?= URL_BASE ?>/assets/css/perfil.css?v=<?= time() ?>">
@@ -124,7 +125,74 @@ $csrfPerfil = $csrfPerfil ?? '';
                 <button type="submit" class="perfil-btn-salvar"><i class="bi bi-check2-circle" aria-hidden="true"></i> Salvar alterações</button>
             </div>
         </form>
+
+        <!-- Zona de Perigo: Exclusão de Conta -->
+        <section class="perfil-card perfil-card-perigo" style="border: 1px solid rgba(239, 68, 68, 0.35); margin-top: 28px; background: rgba(239, 68, 68, 0.04);">
+            <div class="perfil-secao-cabecalho">
+                <span class="perfil-secao-icone" style="color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.25);">
+                    <i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i>
+                </span>
+                <div>
+                    <h2 style="color: #ef4444;">Excluir Conta</h2>
+                    <p>Encerre sua conta e remova permanentemente seus dados do DevStudio.</p>
+                </div>
+            </div>
+
+            <?php if ($ehAdmin): ?>
+                <div style="margin-top: 14px; padding: 12px 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; color: var(--muted); display: flex; align-items: flex-start; gap: 10px;">
+                    <i class="bi bi-shield-lock-fill" style="color: var(--accent); font-size: 16px; flex-shrink: 0; margin-top: 2px;"></i>
+                    <span><strong>Conta de Administrador Conectada:</strong> A conta de administrador atualmente conectada não pode ser excluída por questões de integridade do sistema.</span>
+                </div>
+            <?php else: ?>
+                <p style="color: var(--muted); font-size: 13.5px; margin: 12px 0 16px; line-height: 1.5;">
+                    Ao excluir sua conta, todos os seus dados vinculados (projetos gerados, modelagens no PHPMeuAmigo, arquivos e histórico) serão <strong>permanentemente apagados</strong>. <strong>Esta ação é irreversível.</strong>
+                </p>
+                <button type="button" class="btn btn-danger" id="btnAbrirModalExcluirConta" style="background: #ef4444; border-color: #dc2626; color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="bi bi-trash3-fill"></i> Excluir Minha Conta
+                </button>
+            <?php endif; ?>
+        </section>
     </div>
+
+    <!-- Modal de Confirmação de Exclusão de Conta Própria DevStudio -->
+    <?php if (!$ehAdmin): ?>
+    <div id="modalExcluirContaPropria" class="perfil-modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modalExcluirContaTitulo">
+        <div class="perfil-modal-dialog">
+            <div class="perfil-modal-header" style="border-bottom-color: rgba(239, 68, 68, 0.3);">
+                <h3 id="modalExcluirContaTitulo" class="perfil-modal-title" style="color: #ef4444;">
+                    <i class="bi bi-person-x-fill"></i> Confirmar Exclusão Definitiva
+                </h3>
+                <button type="button" class="perfil-modal-close" id="btnFecharModalExcluirConta" aria-label="Fechar modal">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="perfil-modal-body">
+                <div class="perfil-modal-warning" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.35); color: #f87171;">
+                    <i class="bi bi-exclamation-triangle-fill" style="color: #ef4444; font-size: 20px;"></i>
+                    <div style="color: var(--text);">
+                        <strong style="color: #ef4444;">Ação Estritamente Irreversível:</strong> Tem certeza que deseja encerrar e excluir sua conta no DevStudio? Todos os seus projetos, bancos de dados modelados, atributos, arquivos e histórico de atividades serão permanentemente apagados.
+                    </div>
+                </div>
+                <p style="font-size: 13.5px; color: var(--muted); margin-top: 14px; line-height: 1.5;">
+                    Uma vez confirmada, a sua sessão será imediatamente encerrada e você não poderá recuperar nenhuma informação vinculada à conta.
+                </p>
+            </div>
+
+            <div class="perfil-modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnCancelarModalExcluirConta">
+                    Cancelar
+                </button>
+                <form method="POST" action="<?= URL_BASE ?>/perfil/excluir" style="display: inline-flex; margin: 0;">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfPerfil, ENT_QUOTES, 'UTF-8') ?>">
+                    <button type="submit" class="btn btn-danger" style="background: #ef4444; border-color: #dc2626; color: #fff;">
+                        <i class="bi bi-trash3-fill"></i> Sim, Excluir Minha Conta Permanentemente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- Modal de Confirmação de Alterações Sensíveis no Perfil DevStudio -->
     <div id="modalConfirmarPerfil" class="perfil-modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modalConfirmarPerfilTitulo">
@@ -330,6 +398,40 @@ $csrfPerfil = $csrfPerfil ?? '';
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && modal?.classList.contains('open')) {
                 fecharModal();
+            }
+        });
+
+        // Modal de Exclusão de Conta Própria
+        const modalExcluirConta = document.getElementById('modalExcluirContaPropria');
+        const btnAbrirModalExcluir = document.getElementById('btnAbrirModalExcluirConta');
+        const btnFecharModalExcluir = document.getElementById('btnFecharModalExcluirConta');
+        const btnCancelarModalExcluir = document.getElementById('btnCancelarModalExcluirConta');
+
+        function fecharModalExcluirConta() {
+            if (!modalExcluirConta) return;
+            modalExcluirConta.classList.remove('open');
+            modalExcluirConta.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
+
+        function abrirModalExcluirConta() {
+            if (!modalExcluirConta) return;
+            modalExcluirConta.classList.add('open');
+            modalExcluirConta.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        if (btnAbrirModalExcluir) btnAbrirModalExcluir.addEventListener('click', abrirModalExcluirConta);
+        if (btnFecharModalExcluir) btnFecharModalExcluir.addEventListener('click', fecharModalExcluirConta);
+        if (btnCancelarModalExcluir) btnCancelarModalExcluir.addEventListener('click', fecharModalExcluirConta);
+
+        modalExcluirConta?.addEventListener('click', (e) => {
+            if (e.target === modalExcluirConta) fecharModalExcluirConta();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalExcluirConta?.classList.contains('open')) {
+                fecharModalExcluirConta();
             }
         });
 

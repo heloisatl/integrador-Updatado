@@ -56,11 +56,10 @@ class UsuarioController extends Controller {
         try {
             $sucesso = $this->service->deleteUsuario($id);
             if ($sucesso) {
-                $this->removerAvataresAntigos($id);
-                \app\services\LogService::registrar("Usuário '{$usuarioAlvo['nome']}' (ID: {$id}) excluído pelo Administrador.");
+                \app\services\LogService::registrar("Usuário '{$usuarioAlvo['nome']}' (ID: {$id}) e todos os dados vinculados foram excluídos pelo Administrador.");
                 $_SESSION['usuario_flash'] = [
                     'tipo' => 'sucesso',
-                    'mensagem' => "Usuário '{$usuarioAlvo['nome']}' excluído com sucesso."
+                    'mensagem' => "Usuário '{$usuarioAlvo['nome']}' e todos os dados vinculados foram excluídos permanentemente com sucesso."
                 ];
             } else {
                 $_SESSION['usuario_flash'] = [
@@ -68,22 +67,10 @@ class UsuarioController extends Controller {
                     'mensagem' => "Não foi possível excluir o usuário '{$usuarioAlvo['nome']}'."
                 ];
             }
-        } catch (\PDOException $e) {
-            if ($e->getCode() == '23000' || str_contains($e->getMessage(), '1451')) {
-                $_SESSION['usuario_flash'] = [
-                    'tipo' => 'erro',
-                    'mensagem' => "Não é possível excluir o usuário '{$usuarioAlvo['nome']}' pois existem dados vinculados a ele no sistema (como projetos gerados ou logs de auditoria)."
-                ];
-            } else {
-                $_SESSION['usuario_flash'] = [
-                    'tipo' => 'erro',
-                    'mensagem' => "Erro no banco de dados ao excluir usuário: " . $e->getMessage()
-                ];
-            }
         } catch (\Throwable $e) {
             $_SESSION['usuario_flash'] = [
                 'tipo' => 'erro',
-                'mensagem' => "Ocorreu um erro inesperado ao excluir o usuário: " . $e->getMessage()
+                'mensagem' => "Erro ao excluir o usuário: " . $e->getMessage()
             ];
         }
 
@@ -192,6 +179,7 @@ class UsuarioController extends Controller {
             'mensagemPerfil' => is_array($flash) ? ($flash['mensagem'] ?? '') : '',
             'tipoMensagemPerfil' => is_array($flash) ? ($flash['tipo'] ?? 'sucesso') : 'sucesso',
             'csrfPerfil' => $_SESSION['perfil_csrf'],
+            'ehAdmin' => (method_exists($usuario, 'ehAdmin') ? $usuario->ehAdmin() : (strtolower(trim((string) $usuario->getTipoPerfil())) === 'admin')),
         ];
         $this->view('usuarios/perfil', $dados);
     }
@@ -244,6 +232,79 @@ class UsuarioController extends Controller {
         \app\services\LogService::registrar('Perfil de usuário atualizado com sucesso.');
         $_SESSION['perfil_flash'] = ['tipo' => 'sucesso', 'mensagem' => $resultado['mensagem']];
         $this->redirect(URL_BASE . '/perfil');
+    }
+
+    public function excluirContaPropria(): void {
+        $this->autenticacaoRequired();
+
+        $csrf = (string) ($_POST['csrf_token'] ?? '');
+        if ($csrf === '' || !hash_equals((string) ($_SESSION['perfil_csrf'] ?? ''), $csrf)) {
+            $_SESSION['perfil_flash'] = [
+                'tipo' => 'erro',
+                'mensagem' => 'Sessão expirada. Recarregue a página e tente novamente.'
+            ];
+            $this->redirect(URL_BASE . '/perfil');
+            return;
+        }
+
+        $usuarioAtual = $_SESSION['usuario_logado'] ?? null;
+        if (!$usuarioAtual || !method_exists($usuarioAtual, 'getIdUsuario')) {
+            $this->redirect(URL_BASE . '/login');
+            return;
+        }
+
+        $id = (int) $usuarioAtual->getIdUsuario();
+        $nome = method_exists($usuarioAtual, 'getNome') ? $usuarioAtual->getNome() : 'Usuário';
+
+        // Regra de segurança: Administrador conectado não pode apagar a própria conta conectada
+        $tipoPerfil = method_exists($usuarioAtual, 'getTipoPerfil') ? strtolower(trim((string) $usuarioAtual->getTipoPerfil())) : '';
+        if ($tipoPerfil === 'admin' || (method_exists($usuarioAtual, 'ehAdmin') && $usuarioAtual->ehAdmin())) {
+            $_SESSION['perfil_flash'] = [
+                'tipo' => 'erro',
+                'mensagem' => 'A conta de administrador conectada não pode ser excluída por questões de segurança do sistema.'
+            ];
+            $this->redirect(URL_BASE . '/perfil');
+            return;
+        }
+
+        try {
+            // Registrar log de auditoria permanente da autoexclusão atrelado ao sistema (ID 1)
+            \app\services\LogService::registrar("O usuário '{$nome}' (ID: {$id}) excluiu permanentemente sua própria conta e todos os dados vinculados.", 1);
+
+            $sucesso = $this->service->deleteUsuario($id);
+
+            if ($sucesso) {
+                $_SESSION = [];
+                if (ini_get("session.use_cookies")) {
+                    $params = session_get_cookie_params();
+                    setcookie(session_name(), '', time() - 42000,
+                        $params["path"], $params["domain"],
+                        $params["secure"], $params["httponly"]
+                    );
+                }
+                session_destroy();
+                session_start();
+                $_SESSION['login_flash'] = [
+                    'tipo' => 'sucesso',
+                    'mensagem' => 'Sua conta e todos os dados vinculados foram excluídos permanentemente com sucesso.'
+                ];
+                $this->redirect(URL_BASE . '/login');
+                return;
+            } else {
+                $_SESSION['perfil_flash'] = [
+                    'tipo' => 'erro',
+                    'mensagem' => 'Não foi possível concluir a exclusão da conta.'
+                ];
+                $this->redirect(URL_BASE . '/perfil');
+                return;
+            }
+        } catch (\Throwable $e) {
+            $_SESSION['perfil_flash'] = [
+                'tipo' => 'erro',
+                'mensagem' => 'Erro ao excluir conta: ' . $e->getMessage()
+            ];
+            $this->redirect(URL_BASE . '/perfil');
+        }
     }
 
     public function avatar(): void {

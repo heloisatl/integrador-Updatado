@@ -46,11 +46,116 @@ class UsuarioRepository {
     }
 
     public function deleteUsuario(int $id): bool {
-        $sql  = "DELETE FROM usuario WHERE id_usuario = :id";
-        $stmt = $this->connection->prepare($sql);
-        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        try {
+            $this->connection->beginTransaction();
 
-        return $stmt->execute();
+            // 1. Obter projetos vinculados ao usuário para limpeza de arquivos e estilos
+            $stmtProj = $this->connection->prepare("SELECT id_projeto, fk_estilo, caminho_armazenamento FROM projeto WHERE id_usuario = :id");
+            $stmtProj->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmtProj->execute();
+            $projetos = $stmtProj->fetchAll(PDO::FETCH_ASSOC);
+
+            $estilosParaExcluir = [];
+            foreach ($projetos as $proj) {
+                if (!empty($proj['fk_estilo'])) {
+                    $estilosParaExcluir[] = (int) $proj['fk_estilo'];
+                }
+                if (!empty($proj['caminho_armazenamento']) && file_exists($proj['caminho_armazenamento'])) {
+                    if (is_dir($proj['caminho_armazenamento'])) {
+                        $this->removerDiretorioRecursivo($proj['caminho_armazenamento']);
+                    } else {
+                        @unlink($proj['caminho_armazenamento']);
+                    }
+                }
+            }
+
+            // Desvincular qualquer projeto que tenha ultimo_download referenciando logs deste usuário
+            $stmtCleanDown = $this->connection->prepare("UPDATE projeto SET ultimo_download = NULL WHERE ultimo_download IN (SELECT id_log FROM log WHERE fk_usuario = :id)");
+            $stmtCleanDown->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmtCleanDown->execute();
+
+            // Deletar os projetos do usuário
+            $stmtDelProj = $this->connection->prepare("DELETE FROM projeto WHERE id_usuario = :id");
+            $stmtDelProj->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmtDelProj->execute();
+
+            // Deletar estilos associados aos projetos excluídos
+            if (!empty($estilosParaExcluir)) {
+                $inQuery = implode(',', array_map('intval', array_unique($estilosParaExcluir)));
+                $this->connection->exec("DELETE FROM estilo WHERE id_estilo IN ($inQuery)");
+            }
+
+            // 2. Deletar atributos, tabelas e bancos do usuário no PHPMeuAmigo
+            $stmtDelAttr = $this->connection->prepare("DELETE a FROM atributo a 
+                INNER JOIN tabela t ON a.fk_tabela = t.id_tabela 
+                INNER JOIN banco b ON t.fk_banco = b.id_banco 
+                WHERE b.fk_usuario = :id");
+            $stmtDelAttr->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmtDelAttr->execute();
+
+            $stmtDelTab = $this->connection->prepare("DELETE t FROM tabela t 
+                INNER JOIN banco b ON t.fk_banco = b.id_banco 
+                WHERE b.fk_usuario = :id");
+            $stmtDelTab->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmtDelTab->execute();
+
+            $stmtDelBanco = $this->connection->prepare("DELETE FROM banco WHERE fk_usuario = :id");
+            $stmtDelBanco->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmtDelBanco->execute();
+
+            // 3. Deletar logs gerados por este usuário
+            $stmtDelLogs = $this->connection->prepare("DELETE FROM log WHERE fk_usuario = :id");
+            $stmtDelLogs->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmtDelLogs->execute();
+
+            // 4. Deletar o registro do usuário
+            $stmtDelUser = $this->connection->prepare("DELETE FROM usuario WHERE id_usuario = :id");
+            $stmtDelUser->bindValue(':id', $id, PDO::PARAM_INT);
+            $sucesso = $stmtDelUser->execute();
+
+            $this->connection->commit();
+
+            // 5. Limpeza de arquivos físicos (avatares, histórico JSON e diretórios)
+            $this->limparArquivosFisicosUsuario($id);
+
+            return $sucesso;
+        } catch (\Throwable $e) {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+            error_log("Erro ao excluir usuário e dados vinculados: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function limparArquivosFisicosUsuario(int $id): void {
+        // Avatares
+        $avatarDir = dirname(__DIR__, 2) . '/projetos/avatars';
+        foreach (glob($avatarDir . '/' . $id . '_*.*') ?: [] as $arquivo) {
+            @unlink($arquivo);
+        }
+
+        // Histórico JSON
+        $historicoFile = dirname(__DIR__, 2) . '/projetos/historicos/usuario_' . $id . '.json';
+        if (file_exists($historicoFile)) {
+            @unlink($historicoFile);
+        }
+
+        // Diretório de arquivos de projetos do usuário
+        $userDir = dirname(__DIR__, 2) . '/projetos/arquivos/' . $id;
+        if (is_dir($userDir)) {
+            $this->removerDiretorioRecursivo($userDir);
+        }
+    }
+
+    private function removerDiretorioRecursivo(string $dir): void {
+        if (!file_exists($dir)) return;
+        $items = array_diff(scandir($dir) ?: [], ['.', '..']);
+        foreach ($items as $item) {
+            $path = $dir . '/' . $item;
+            is_dir($path) ? $this->removerDiretorioRecursivo($path) : @unlink($path);
+        }
+        @rmdir($dir);
     }
 
     public function emailExiste(string $email, ?int $idExcluido = null): bool {

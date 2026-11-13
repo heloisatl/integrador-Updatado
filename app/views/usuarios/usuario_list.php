@@ -28,13 +28,6 @@ $usuarioLogadoId = isset($_SESSION['usuario_logado']) ? (int) $_SESSION['usuario
         </div>
         <button type="button" class="alert-close" onclick="this.parentElement.remove()" aria-label="Fechar">&times;</button>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof window.devstudioAlert === 'function') {
-                window.devstudioAlert(<?= json_encode($flash['mensagem']) ?>, <?= json_encode($flash['tipo']) ?>);
-            }
-        });
-    </script>
 <?php endif; ?>
 
 <?php if (empty($usuarios)): ?>
@@ -141,7 +134,7 @@ $usuarioLogadoId = isset($_SESSION['usuario_logado']) ? (int) $_SESSION['usuario
             <div id="modalAvisoPerigo" class="usuario-modal-warning">
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 <div>
-                    <strong>Atenção:</strong> Tem certeza que deseja excluir permanentemente este usuário da plataforma? Esta ação não pode ser desfeita.
+                    <strong>Ação Estritamente Irreversível:</strong> Tem certeza que deseja excluir permanentemente este usuário da plataforma? Esta ação é <strong>irreversível</strong> e removerá <strong>todos os dados vinculados a ele</strong> (projetos gerados, bancos de dados modelados, arquivos e histórico).
                 </div>
             </div>
         </div>

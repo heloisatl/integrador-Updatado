@@ -506,8 +506,9 @@ class PhpMeuAmigoController extends Controller{
                     }
                 }
 
-                // 1.3 Puxa as colunas fisicas inspecionadas do MySQL
+                // 1.3 Puxa as colunas fisicas inspecionadas do MySQL e o mapa de índices UNIQUE
                 $colunas = $schema->getAtributos($nome_tabela);
+                $colunasUnicas = $schema->getColunasUnicas($nome_tabela);
 
                 foreach ($colunas as $col) {
                     $nomeCampo = $col['Field'] ?? '';
@@ -528,7 +529,8 @@ class PhpMeuAmigoController extends Controller{
                     $PK = (isset($col['Key'])   && $col['Key']  === 'PRI') ? 1 : 0;
                     $NN = (isset($col['Null'])  && $col['Null'] === 'NO')  ? 1 : 0;
                     $AI = (isset($col['Extra']) && str_contains(strtolower((string)$col['Extra']), 'auto_increment')) ? 1 : 0;
-                    $UQ = (isset($col['Key'])   && $col['Key']  === 'UNI') ? 1 : 0;
+                    $isUniqueIndex = isset($colunasUnicas[strtolower($nomeCampo)]);
+                    $UQ = ((isset($col['Key']) && $col['Key'] === 'UNI') || $isUniqueIndex) ? 1 : 0;
 
                     // Cria o atributo SEM fk_atributo por enquanto (garante insercao sem violacao de FK)
                     $this->atributoService->insert($id_tabela, null, $nomeCampo, $tipo, $PK, $NN, $AI, $UQ);

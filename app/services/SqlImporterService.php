@@ -140,8 +140,9 @@ class SqlImporterService{
                 }
             }
 
-            if (preg_match('/UNIQUE\s+(?:KEY\s+)?[`"]?([a-zA-Z0-9_]+)?[`"]?\s*\(([^)]+)\)/i', $line_trimmed, $uqMatch)) {
-                foreach (explode(',', $uqMatch[2]) as $c) {
+            // Captura UNIQUE KEY, UNIQUE INDEX, UNIQUE [nome] (...), CONSTRAINT [nome] UNIQUE (...)
+            if (preg_match('/(?:CONSTRAINT\s+[`"]?[a-zA-Z0-9_]+[`"]?\s+)?UNIQUE(?:\s+(?:KEY|INDEX))?(?:\s+[`"]?[a-zA-Z0-9_]+[`"]?)?\s*\(([^)]+)\)/i', $line_trimmed, $uqMatch)) {
+                foreach (explode(',', $uqMatch[1]) as $c) {
                     $unique_keys[trim($c, " `\"")] = true;
                 }
             }
@@ -166,7 +167,7 @@ class SqlImporterService{
                 $isPk = isset($primary_keys[$col_name]) || preg_match('/PRIMARY\s+KEY/i', $type_and_flags) ? 1 : 0;
                 $isNn = preg_match('/NOT\s+NULL/i', $type_and_flags) ? 1 : 0;
                 $isAi = preg_match('/AUTO_INCREMENT/i', $type_and_flags) ? 1 : 0;
-                $isUq = isset($unique_keys[$col_name]) || preg_match('/UNIQUE/i', $type_and_flags) ? 1 : 0;
+                $isUq = isset($unique_keys[$col_name]) || preg_match('/\bUNIQUE\b/i', $type_and_flags) ? 1 : 0;
 
                 $this->atributoService->insert($id_tabela, null, $col_name, $tipo_dado, $isPk, $isNn, $isAi, $isUq);
             }

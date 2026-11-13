@@ -31,6 +31,31 @@ class SchemaInspector{
         return $stm->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Retorna um mapa com os nomes de todas as colunas que possuem índice UNIQUE na tabela
+     * (além do que é reportado em SHOW COLUMNS como 'UNI', capturando índices compostos e nomeados).
+     */
+    public function getColunasUnicas($nomeTabela): array {
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $nomeTabela)) {
+            return [];
+        }
+        try {
+            $sql = "SHOW INDEX FROM `$nomeTabela` WHERE Non_unique = 0 AND Key_name != 'PRIMARY'";
+            $stm = $this->specialConn->prepare($sql);
+            $stm->execute();
+            $indices = $stm->fetchAll(PDO::FETCH_ASSOC);
+            $colunasUnicas = [];
+            foreach ($indices as $idx) {
+                if (!empty($idx['Column_name'])) {
+                    $colunasUnicas[strtolower((string)$idx['Column_name'])] = true;
+                }
+            }
+            return $colunasUnicas;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     public function getDatabases($option){
         // $specialConn = ConnectionFactory::specialConn($dsn,$user,$pass);
         $sql = "SHOW DATABASES";
