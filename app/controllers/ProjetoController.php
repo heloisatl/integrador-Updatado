@@ -661,8 +661,7 @@ class ProjetoController extends Controller{
             }
         }
 
-        $historicoAdmin = $this->ordenarPorData($historicoAdmin);
-        $historicoAdmin = array_slice($historicoAdmin, 0, 10);
+        $historicoAdmin = $this->aplicarLimiteIndependentePorModulo($historicoAdmin, 10);
         $this->salvarJsonArrayValido($caminhoHistoricoUsuario, $historicoAdmin);
 
         if (!@rename($caminhoLegado, $caminhoMigrado)) {
@@ -793,13 +792,95 @@ class ProjetoController extends Controller{
         return $itens;
     }
 
+    private function aplicarLimiteIndependentePorModulo(array $historico, int $limite = 10): array {
+        $mvc = [];
+        $pm = [];
+        $outros = [];
+
+        foreach ($historico as $item) {
+            $norm = $this->normalizarItemHistorico($item);
+            $mod = $norm['modulo'] ?? '';
+            if ($mod === 'MVC Creator') {
+                $mvc[] = $norm;
+            } elseif ($mod === 'PageMaker') {
+                $pm[] = $norm;
+            } else {
+                $outros[] = $norm;
+            }
+        }
+
+        $mvc = $this->ordenarPorData($mvc);
+        if (count($mvc) > $limite) {
+            $excedentesMvc = array_slice($mvc, $limite);
+            $mvc = array_slice($mvc, 0, $limite);
+            foreach ($excedentesMvc as $itemExcedente) {
+                $this->expurgarArquivosEDadosProjeto($itemExcedente);
+            }
+        }
+
+        $pm = $this->ordenarPorData($pm);
+        if (count($pm) > $limite) {
+            $excedentesPm = array_slice($pm, $limite);
+            $pm = array_slice($pm, 0, $limite);
+            foreach ($excedentesPm as $itemExcedentePm) {
+                $this->expurgarArquivosEDadosProjeto($itemExcedentePm);
+            }
+        }
+
+        $resultado = array_merge($mvc, $pm, $outros);
+        return $this->ordenarPorData($resultado);
+    }
+
+    private function expurgarArquivosEDadosProjeto(array $item): void {
+        $nomeProjeto = trim((string)($item['nome'] ?? ''));
+        $modulo = trim((string)($item['modulo'] ?? ''));
+        $usuarioId = (int)($item['usuario_id'] ?? $this->getHistoricoUsuarioId());
+        $payload = is_array($item['conteudo'] ?? null) ? $item['conteudo'] : [];
+
+        // 1. Apaga arquivo ZIP físico se existir em diretórios de download
+        $arquivoZip = '';
+        if (!empty($payload['arquivo']) && is_string($payload['arquivo'])) {
+            $arquivoZip = basename($payload['arquivo']);
+        } elseif ($nomeProjeto !== '') {
+            $limpo = preg_replace('/[^a-zA-Z0-9_\-]+/', '_', $nomeProjeto);
+            $arquivoZip = $limpo . '.zip';
+        }
+
+        $diretorios = [
+            __DIR__ . '/../projetos/downloads',
+            __DIR__ . '/../../public/downloads',
+        ];
+        foreach ($diretorios as $dir) {
+            if ($arquivoZip !== '' && is_file($dir . '/' . $arquivoZip)) {
+                @unlink($dir . '/' . $arquivoZip);
+            }
+            if ($nomeProjeto !== '') {
+                $limpo = preg_replace('/[^a-zA-Z0-9_\-]+/', '_', $nomeProjeto);
+                $matches = glob($dir . '/' . $limpo . '*.zip');
+                if ($matches) {
+                    foreach ($matches as $m) {
+                        @unlink($m);
+                    }
+                }
+            }
+        }
+
+        // 2. Se for MVC Creator, remove do banco de dados (tabela projeto)
+        if ($modulo === 'MVC Creator' && $usuarioId > 0 && $nomeProjeto !== '') {
+            try {
+                $this->getProjetoService()->deleteByNomeAndUsuario($nomeProjeto, $usuarioId);
+            } catch (\Throwable $t) {
+                // Silencia falha se banco não estiver acessível
+            }
+        }
+    }
+
     private function sincronizarHistoricoEArquivos(): array {
         $caminhoHistoricoUsuario = $this->getHistoricoStoragePath();
         $this->migrarHistoricoCompartilhadoAdmin($caminhoHistoricoUsuario);
         $historico = $this->lerJsonArrayValido($caminhoHistoricoUsuario);
 
-        $historico = $this->ordenarPorData($historico);
-        $historico = array_slice($historico, 0, 10);
+        $historico = $this->aplicarLimiteIndependentePorModulo($historico, 10);
         $this->salvarJsonArrayValido($caminhoHistoricoUsuario, $historico);
         return $historico;
     }
@@ -848,10 +929,8 @@ class ProjetoController extends Controller{
             'conteudo' => $conteudo,
         ];
         $historico[] = $novoItem;
-        $historico = $this->ordenarPorData($historico);
-        $historico = array_slice($historico, 0, 10);
+        $historico = $this->aplicarLimiteIndependentePorModulo($historico, 10);
         $this->salvarJsonArrayValido($this->getHistoricoStoragePath(), $historico);
-
 
         \app\services\LogService::registrar("Projeto salvo no histórico (" . $modulo . "): " . $nome);
         return ['sucesso' => true, 'item' => $novoItem];
@@ -1160,6 +1239,7 @@ class ProjetoController extends Controller{
         $historico = $this->sincronizarHistoricoEArquivos();
         $item = $this->removerItemPorId($historico, $id);
         if ($item !== null) {
+            $this->expurgarArquivosEDadosProjeto($item);
             \app\services\LogService::registrar("Projeto removido do histórico (ID: " . $id . ")");
         }
         if ($item === null) {
@@ -1174,7 +1254,10 @@ class ProjetoController extends Controller{
     public function limparHistorico(): void {
         $this->autenticacaoRequired();
 
-        $this->sincronizarHistoricoEArquivos();
+        $historico = $this->sincronizarHistoricoEArquivos();
+        foreach ($historico as $item) {
+            $this->expurgarArquivosEDadosProjeto($item);
+        }
         $this->salvarJsonArrayValido($this->getHistoricoStoragePath(), []);
         \app\services\LogService::registrar("Histórico de projetos foi limpo pelo usuário.");
         $this->redirect(URL_BASE . '/projetos/historico');

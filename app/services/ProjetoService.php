@@ -30,11 +30,57 @@ class ProjetoService{
     }
 
     public function insert(Projeto $projeto){
+        $idUsuario = (int) $projeto->getFk_usuario();
+        if ($idUsuario > 0) {
+            // Caso o usuário alcance o limite de 10 projetos, apaga o mais antigo do banco e remove o ZIP físico
+            $antigo = $this->projetoRepository->apagarProjetoMaisAntigoSeLimite($idUsuario, 10);
+            if ($antigo) {
+                $this->removerArquivoZipProjeto($antigo['nome_projeto'] ?? '', (int) ($antigo['id_projeto'] ?? 0));
+            }
+        }
+
         $idInserido = $this->projetoRepository->insert($projeto);
-        if ($idInserido) {
-            $this->projetoRepository->limitarCotaPorUsuario((int) $projeto->getFk_usuario(), 10);
+        if ($idInserido && $idUsuario > 0) {
+            $this->projetoRepository->limitarCotaPorUsuario($idUsuario, 10);
         }
         return $idInserido;
+    }
+
+    public function deleteByIdAndUsuario(int $idProjeto, int $idUsuario): bool {
+        return $this->projetoRepository->deleteByIdAndUsuario($idProjeto, $idUsuario);
+    }
+
+    public function deleteByNomeAndUsuario(string $nomeProjeto, int $idUsuario): bool {
+        return $this->projetoRepository->deleteByNomeAndUsuario($nomeProjeto, $idUsuario);
+    }
+
+    public function deleteAllByUsuario(int $idUsuario): bool {
+        return $this->projetoRepository->deleteAllByUsuario($idUsuario);
+    }
+
+    public function apagarProjetoMaisAntigoSeLimite(int $idUsuario, int $limite = 10): ?array {
+        return $this->projetoRepository->apagarProjetoMaisAntigoSeLimite($idUsuario, $limite);
+    }
+
+    private function removerArquivoZipProjeto(string $nomeProjeto, int $idProjeto): void {
+        $dirDownloads = __DIR__ . '/../projetos/downloads';
+        if (!is_dir($dirDownloads)) {
+            return;
+        }
+
+        $candidatos = [];
+        if ($nomeProjeto !== '' && $idProjeto > 0) {
+            $candidatos[] = $dirDownloads . '/' . $nomeProjeto . '-' . $idProjeto . '.zip';
+        }
+        if ($nomeProjeto !== '') {
+            $candidatos[] = $dirDownloads . '/' . $nomeProjeto . '.zip';
+        }
+
+        foreach ($candidatos as $arq) {
+            if (is_file($arq)) {
+                @unlink($arq);
+            }
+        }
     }
 
 

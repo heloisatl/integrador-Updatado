@@ -5,6 +5,11 @@
             <i class="bi bi-info-circle" aria-hidden="true"></i>
             <span><strong>Aviso de Sessão (Modo Visitante):</strong> Os dados e arquivos gerados nesta sessão não serão salvos no servidor nem registrados no histórico.</span>
         </div>
+    <?php else: ?>
+        <div class="mvc-aviso-info" role="status" style="margin-bottom: 16px;">
+            <i class="bi bi-info-circle" aria-hidden="true" style="font-size: 16px; flex-shrink: 0;"></i>
+            <span><strong>Aviso de Limite de Projetos:</strong> Cada usuário pode manter até 10 projetos no sistema. Ao atingir o limite de 10 projetos, o projeto mais antigo será <strong>automaticamente apagado</strong> para dar lugar ao novo.</span>
+        </div>
     <?php endif; ?>
 
     <p class="mvc-subtitulo">Clique no botão abaixo para gerar o código MVC e baixar o arquivo .ZIP completo:</p>

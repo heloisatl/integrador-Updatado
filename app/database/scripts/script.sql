@@ -282,3 +282,43 @@ VALUES ('Administrador', 'admin@devstudio.com', '$2y$10$xB4P7YzuYdTGUTGgao9Qce6k
 --   ADD COLUMN IF NOT EXISTS `ordem_elementos` VARCHAR(50) NOT NULL DEFAULT 'texto-imagem-lista-tabela',
 --   ADD COLUMN IF NOT EXISTS `html_customizado` MEDIUMTEXT NULL;
 
+-- -----------------------------------------------------
+-- Procedure: sp_apagar_projeto_mais_antigo_se_limite
+-- Apaga o projeto mais antigo caso o usuário alcance a cota de 10 projetos
+-- -----------------------------------------------------
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `sp_apagar_projeto_mais_antigo_se_limite`$$
+CREATE PROCEDURE `sp_apagar_projeto_mais_antigo_se_limite`(
+    IN p_id_usuario INT,
+    IN p_limite INT
+)
+BEGIN
+    DECLARE v_total INT;
+    DECLARE v_id_antigo INT;
+
+    IF p_limite IS NULL OR p_limite <= 0 THEN
+        SET p_limite = 10;
+    END IF;
+
+    SELECT COUNT(*) INTO v_total 
+    FROM `projeto` 
+    WHERE `id_usuario` = p_id_usuario;
+
+    WHILE v_total >= p_limite DO
+        SELECT `id_projeto` INTO v_id_antigo 
+        FROM `projeto` 
+        WHERE `id_usuario` = p_id_usuario 
+        ORDER BY `data_criacao` ASC, `id_projeto` ASC 
+        LIMIT 1;
+
+        IF v_id_antigo IS NOT NULL THEN
+            DELETE FROM `projeto` WHERE `id_projeto` = v_id_antigo;
+            SET v_total = v_total - 1;
+        ELSE
+            SET v_total = 0;
+        END IF;
+    END WHILE;
+END$$
+DELIMITER ;
+
+

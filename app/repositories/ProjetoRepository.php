@@ -44,6 +44,90 @@ class ProjetoRepository{
         }
     }
 
+    /**
+     * Remove o projeto mais antigo do usuário caso o limite máximo seja atingido ou superado,
+     * liberando espaço para um novo projeto. Tenta usar a stored procedure caso disponível,
+     * ou realiza a remoção direta via PDO.
+     * Retorna os dados do projeto removido (ou null se nenhum foi removido).
+     */
+    public function apagarProjetoMaisAntigoSeLimite(int $idUsuario, int $limite = 10): ?array {
+        if ($idUsuario <= 0 || $limite <= 0) {
+            return null;
+        }
+
+        $sqlCount = "SELECT COUNT(*) FROM `projeto` WHERE `id_usuario` = :id_usuario";
+        $stmCount = $this->conn->prepare($sqlCount);
+        $stmCount->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+        $stmCount->execute();
+        $total = (int) $stmCount->fetchColumn();
+
+        if ($total >= $limite) {
+            $sqlAntigo = "SELECT `id_projeto`, `nome_projeto`, `caminho_armazenamento` 
+                          FROM `projeto` 
+                          WHERE `id_usuario` = :id_usuario 
+                          ORDER BY `data_criacao` ASC, `id_projeto` ASC 
+                          LIMIT 1";
+            $stmAntigo = $this->conn->prepare($sqlAntigo);
+            $stmAntigo->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+            $stmAntigo->execute();
+            $projetoAntigo = $stmAntigo->fetch(PDO::FETCH_ASSOC);
+
+            if ($projetoAntigo && !empty($projetoAntigo['id_projeto'])) {
+                $idAntigo = (int) $projetoAntigo['id_projeto'];
+
+                try {
+                    $stmtProc = $this->conn->prepare("CALL sp_apagar_projeto_mais_antigo_se_limite(:id_usuario, :limite)");
+                    $stmtProc->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+                    $stmtProc->bindValue(':limite', $limite, PDO::PARAM_INT);
+                    $stmtProc->execute();
+                    $stmtProc->closeCursor();
+                } catch (\Throwable $t) {
+                    $sqlDel = "DELETE FROM `projeto` WHERE `id_projeto` = :id_projeto AND `id_usuario` = :id_usuario";
+                    $stmDel = $this->conn->prepare($sqlDel);
+                    $stmDel->bindValue(':id_projeto', $idAntigo, PDO::PARAM_INT);
+                    $stmDel->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+                    $stmDel->execute();
+                }
+
+                return $projetoAntigo;
+            }
+        }
+
+        return null;
+    }
+
+    public function deleteByIdAndUsuario(int $idProjeto, int $idUsuario): bool {
+        if ($idProjeto <= 0 || $idUsuario <= 0) {
+            return false;
+        }
+        $sql = "DELETE FROM `projeto` WHERE `id_projeto` = :id_projeto AND `id_usuario` = :id_usuario";
+        $stm = $this->conn->prepare($sql);
+        $stm->bindValue(':id_projeto', $idProjeto, PDO::PARAM_INT);
+        $stm->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+        return $stm->execute();
+    }
+
+    public function deleteByNomeAndUsuario(string $nomeProjeto, int $idUsuario): bool {
+        if ($nomeProjeto === '' || $idUsuario <= 0) {
+            return false;
+        }
+        $sql = "DELETE FROM `projeto` WHERE `nome_projeto` = :nome_projeto AND `id_usuario` = :id_usuario";
+        $stm = $this->conn->prepare($sql);
+        $stm->bindValue(':nome_projeto', $nomeProjeto, PDO::PARAM_STR);
+        $stm->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+        return $stm->execute();
+    }
+
+    public function deleteAllByUsuario(int $idUsuario): bool {
+        if ($idUsuario <= 0) {
+            return false;
+        }
+        $sql = "DELETE FROM `projeto` WHERE `id_usuario` = :id_usuario";
+        $stm = $this->conn->prepare($sql);
+        $stm->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+        return $stm->execute();
+    }
+
     public function getById(int $id){
         $sql = "SELECT nome_projeto,comentarios,views FROM projeto WHERE id_projeto = ?;";
         $stm = $this->conn->prepare($sql);
