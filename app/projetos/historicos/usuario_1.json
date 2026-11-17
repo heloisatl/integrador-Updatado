@@ -1,1 +1,33 @@
-[]
+[
+    {
+        "id": "proj_079c02c823b1",
+        "nome": "projetoooo",
+        "modulo": "MVC Creator",
+        "criado_em": "2026-11-14T09:59:59-03:00",
+        "usuario_id": 1,
+        "conteudo": {
+            "nome": "projetoooo",
+            "arquivo": "projetoooo-1.zip",
+            "downloadUrl": "http:\/\/localhost:8081\/projetos\/downloadZip?file=projetoooo-1.zip&name=projetoooo.zip",
+            "banco": "phpmyadmin",
+            "banco_id": 1,
+            "gerado_em": "2026-11-14T09:59:59-03:00",
+            "tipo": "MVC Creator"
+        }
+    },
+    {
+        "id": "proj_d7ec4d09fa87",
+        "nome": "pagina",
+        "modulo": "PageMaker",
+        "criado_em": "2026-11-14T09:59:12-03:00",
+        "usuario_id": 1,
+        "conteudo": {
+            "nome": "pagina",
+            "arquivo": "pagina.html",
+            "html": "<!doctype html>\r\n<html lang=\"pt-BR\">\r\n<head><meta charset=\"utf-8\"><title>Meu Projeto<\/title><link rel=\"stylesheet\" href=\"estilo.css\"><\/head>\r\n<body>\r\n    <header><h1>Meu Projeto<\/h1><\/header>\r\n    \r\n    <main class=\"grade-conteudo\"><p class=\"bloco-texto\">Conteúdo da página<\/p>\r\n\r\n\r\n<\/main>\r\n    <a class=\"botao-cta\" href=\"https:\/\/exemplo.com\">Saiba mais<\/a>\r\n    \r\n<\/body>\r\n<\/html>",
+            "css": ":root {\r\n    --cor-fundo: #ffffff;\r\n    --cor-fonte: #000000;\r\n    --cor-links: #0000ff;\r\n    --cor-botao: #5b6af0;\r\n    --cor-botao-hover: #4a59df;\r\n}\r\n\r\nbody {\r\n    background-color: var(--cor-fundo);\r\n    background-image: linear-gradient(rgba(255, 255, 255, 1), rgba(232, 232, 255, 1));\r\n    background-size: cover;\r\n    color: var(--cor-fonte);\r\n    font-family: Arial, sans-serif;\r\n    font-size: 18px;\r\n    font-weight: 400;\r\n    line-height: 1.5;\r\n    margin: 24px;\r\n    padding: 24px;\r\n}\r\n\r\nheader {\r\n    border-radius: 8px;\r\n    box-shadow: none;\r\n    padding: 24px;\r\n    \r\n}\r\n\r\n.grade-conteudo {\r\n    align-items: flex-start;\r\n    display: flex;\r\n    flex-direction: row;\r\n    flex-wrap: wrap;\r\n    gap: 24px;\r\n    justify-content: flex-start;\r\n}\r\n\r\n.grade-conteudo > * {\r\n    flex: 1 1 calc(100% - 24px);\r\n    min-width: 0;\r\n}\r\n\r\nnav a {\r\n    color: var(--cor-links);\r\n    margin-right: 16px;\r\n    text-decoration: underline;\r\n}\r\n\r\nimg, .cartao-conteudo, table, .botao-cta {\r\n    border-radius: 8px;\r\n    box-shadow: none;\r\n}\r\n\r\nimg { max-width: 100%; width: auto; }\r\n.botao-cta { background: var(--cor-botao); color: #fff; display: inline-block; padding: 10px 16px; text-decoration: none; }\r\n.botao-cta:hover { background: var(--cor-botao-hover); }\r\n.formulario-contato { display: grid; gap: 12px; max-width: 520px; }\r\n.formulario-contato input, .formulario-contato textarea { border: 1px solid var(--cor-links); border-radius: 8px; padding: 10px; }\r\n\r\n@media (max-width: 1200px) {\r\n    .grade-conteudo { flex-direction: column; }\r\n    .grade-conteudo > * { flex-basis: auto; width: 100%; }\r\n}",
+            "gerado_em": "2026-11-14T09:59:12-03:00",
+            "tipo": "PageMaker"
+        }
+    }
+]

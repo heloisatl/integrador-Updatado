@@ -27,10 +27,6 @@ $hostPadrao = $isLoopback ? 'localhost' : $clientIp;
         <div class="mvc-aviso-info">
             <span>As credenciais foram pré-carregadas das <strong>Configurações Globais</strong> do módulo <a href="<?= URL_BASE ?>/projetos/phpmeuamigo" style="color: var(--accent); font-weight: 600; text-decoration: underline;">PHPMeuAmigo</a> e podem ser alteradas por lá, caso necessário. Informe o nome do projeto e selecione o banco de dados.</span>
         </div>
-        <div class="mvc-aviso-info" style="margin-top: 10px;">
-            <i class="bi bi-info-circle" style="font-size: 16px; flex-shrink: 0;"></i>
-            <span><strong>Aviso de Limite de Projetos:</strong> Cada usuário pode manter até 10 projetos no sistema. Caso você atinja o limite de 10 projetos, o projeto mais antigo será <strong>automaticamente apagado</strong> para dar lugar ao novo.</span>
-        </div>
     <?php endif; ?>
 
     <div class="mvc-grade-formulario">
