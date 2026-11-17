@@ -38,9 +38,12 @@ function phpmaShowAlert(message, type = 'error', title = null) {
     // Verifica se algum modal está aberto para exibir o alerta dentro do modal ativo
     const modalBanco = document.getElementById("phpma-modal-banco");
     const modalImport = document.getElementById("phpma-modal-import-sql");
+    const modalDelete = document.getElementById("phpma-modal-confirm-delete");
 
     let alertEl = document.getElementById("phpma-inline-alert");
-    if (modalBanco && modalBanco.classList.contains("open")) {
+    if (modalDelete && modalDelete.classList.contains("open")) {
+        alertEl = document.getElementById("phpma-modal-delete-alert") || alertEl;
+    } else if (modalBanco && modalBanco.classList.contains("open")) {
         alertEl = document.getElementById("phpma-modal-banco-alert") || alertEl;
     } else if (modalImport && modalImport.classList.contains("open")) {
         alertEl = document.getElementById("phpma-modal-import-alert") || alertEl;
@@ -48,9 +51,31 @@ function phpmaShowAlert(message, type = 'error', title = null) {
 
     if (!alertEl) return;
 
-    alertEl.className = 'phpma-inline-alert';
+    let alertClass = 'phpma-inline-alert';
+    let iconClass = 'bi-info-circle-fill';
+    let iconColor = 'var(--accent)';
 
+    if (type === 'error' || type === 'erro' || type === 'danger') {
+        alertClass += ' alert-danger';
+        iconClass = 'bi-exclamation-triangle-fill';
+        iconColor = '#ef4444';
+    } else if (type === 'warning' || type === 'aviso') {
+        alertClass += ' alert-warning';
+        iconClass = 'bi-exclamation-circle-fill';
+        iconColor = '#f59e0b';
+    } else if (type === 'success' || type === 'sucesso') {
+        alertClass += ' alert-success';
+        iconClass = 'bi-check-circle-fill';
+        iconColor = '#22c55e';
+    } else {
+        alertClass += ' alert-info';
+        iconClass = 'bi-info-circle-fill';
+        iconColor = 'var(--accent)';
+    }
+
+    alertEl.className = alertClass;
     alertEl.innerHTML = `
+        <i class="bi ${iconClass}" style="font-size: 18px; margin-right: 10px; flex-shrink: 0; color: ${iconColor};"></i>
         <div class="phpma-inline-alert-body">
             <div class="phpma-inline-alert-msg">${escapeHtml(message)}</div>
         </div>
@@ -68,7 +93,8 @@ function phpmaShowAlert(message, type = 'error', title = null) {
 
     // Rola suavemente até o alerta caso esteja fora da visão
     if ((!modalBanco || !modalBanco.classList.contains("open")) && 
-        (!modalImport || !modalImport.classList.contains("open"))) {
+        (!modalImport || !modalImport.classList.contains("open")) &&
+        (!modalDelete || !modalDelete.classList.contains("open"))) {
         alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 }
@@ -356,6 +382,36 @@ function bindEvents() {
             }
         });
     }
+
+    const modalDelete = document.getElementById("phpma-modal-confirm-delete");
+    if (modalDelete) {
+        modalDelete.addEventListener("click", function (e) {
+            if (e.target === modalDelete) {
+                window.phpmaCloseDeleteModal();
+            }
+        });
+    }
+
+    const inputSenhaDelete = document.getElementById("phpma-delete-senha");
+    if (inputSenhaDelete) {
+        inputSenhaDelete.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                window.phpmaConfirmarExclusaoBanco();
+            } else if (e.key === "Escape") {
+                window.phpmaCloseDeleteModal();
+            }
+        });
+    }
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            const modalDel = document.getElementById("phpma-modal-confirm-delete");
+            if (modalDel && modalDel.classList.contains("open")) {
+                window.phpmaCloseDeleteModal();
+            }
+        }
+    });
 }
 
 // --- RENDERIZACAO ---
@@ -796,6 +852,25 @@ window.phpmaExecutarImportacaoLocal = async function () {
     }
 };
 
+window.phpmaTogglePasswordVisibility = function (inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) {
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        }
+    } else {
+        input.type = 'password';
+        if (icon) {
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+};
+
 window.phpmaDeleteBancoActive = function () {
     if (!state.activeBancoId) {
         phpmaToast("Selecione um banco de dados primeiro!", "warning");
@@ -810,9 +885,28 @@ window.phpmaDeleteBancoActive = function () {
     if (labelNome) {
         labelNome.textContent = `"${nomeBanco}"`;
     }
+
+    const inputSenha = document.getElementById("phpma-delete-senha");
+    if (inputSenha) {
+        inputSenha.value = "";
+        inputSenha.style.borderColor = "var(--border)";
+    }
+
+    const alertModal = document.getElementById("phpma-modal-delete-alert");
+    if (alertModal) {
+        alertModal.style.display = "none";
+    }
+
+    const btnAction = document.getElementById("phpma-btn-confirm-delete-action");
+    if (btnAction) {
+        btnAction.disabled = false;
+        btnAction.innerHTML = '<i class="bi bi-trash3-fill"></i> Excluir Definitivamente';
+    }
+
     if (modalConfirm) {
         window.phpmaDismissAlert();
         modalConfirm.classList.add("open");
+        setTimeout(() => inputSenha?.focus(), 150);
     }
 };
 
@@ -821,29 +915,70 @@ window.phpmaCloseDeleteModal = function () {
     if (modalConfirm) {
         modalConfirm.classList.remove("open");
     }
+    const inputSenha = document.getElementById("phpma-delete-senha");
+    if (inputSenha) {
+        inputSenha.value = "";
+        inputSenha.style.borderColor = "var(--border)";
+    }
+    const alertModal = document.getElementById("phpma-modal-delete-alert");
+    if (alertModal) {
+        alertModal.style.display = "none";
+    }
 };
 
 window.phpmaConfirmarExclusaoBanco = async function () {
     if (!state.activeBancoId) return;
 
-    window.phpmaCloseDeleteModal();
+    const inputSenha = document.getElementById("phpma-delete-senha");
+    const senha = inputSenha ? inputSenha.value.trim() : "";
+
+    if (!senha) {
+        phpmaShowAlert("Por favor, informe a sua senha de acesso para autorizar a exclusão do banco de dados.", "warning");
+        if (inputSenha) {
+            inputSenha.focus();
+            inputSenha.style.borderColor = "#ef4444";
+        }
+        return;
+    }
+
+    const btnAction = document.getElementById("phpma-btn-confirm-delete-action");
+    const originalText = btnAction ? btnAction.innerHTML : '';
+    if (btnAction) {
+        btnAction.disabled = true;
+        btnAction.innerHTML = '<i class="bi bi-hourglass-split"></i> Excluindo...';
+    }
 
     const formData = new FormData();
     formData.append('id_banco', state.activeBancoId);
+    formData.append('senha', senha);
 
     try {
         const resp = await fetch(apiEndpoint('/phpmeuamigo/bancos/excluir'), { method: 'POST', body: formData });
         const res = await resp.json();
 
         if (res.sucesso) {
+            window.phpmaCloseDeleteModal();
             phpmaToast(res.mensagem, "success");
             state.activeBancoId = null;
             await carregarBancosBackend();
         } else {
-            phpmaToast("Erro ao excluir banco: " + res.mensagem, "error");
+            if (btnAction) {
+                btnAction.disabled = false;
+                btnAction.innerHTML = originalText;
+            }
+            phpmaShowAlert(res.mensagem || "Erro ao excluir banco de dados.", "error");
+            if (inputSenha) {
+                inputSenha.focus();
+                inputSenha.select();
+                inputSenha.style.borderColor = "#ef4444";
+            }
         }
     } catch (err) {
-        phpmaToast("Erro de conexao ao tentar excluir banco de dados.", "error");
+        if (btnAction) {
+            btnAction.disabled = false;
+            btnAction.innerHTML = originalText;
+        }
+        phpmaShowAlert("Erro de conexão ao tentar excluir banco de dados.", "error");
     }
 };
 

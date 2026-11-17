@@ -65,3 +65,33 @@ Este documento descreve detalhadamente as melhorias, correções de regras de ne
   - Correção na rotina de geração e download de scripts `.sql` no PHPMeuAmigo, garantindo a exportação correta de DDL de bancos, tabelas e atributos.
 - **Padronização Visual**:
   - Remoção de degradês (gradientes) dos botões de ação do sistema, adotando cores sólidas e estados `hover` consistentes com a identidade visual do DevStudio.
+
+---
+
+## 5. Retenção de Armazenamento (60 Dias) e Exclusão Segura de Bancos com Senha
+
+### 5.1 Remoção Automática de Projetos após 60 Dias
+- **Prevenção de Sobrecarga de Armazenamento**:
+  - Implementada a política de retenção automática: todo projeto armazenado no sistema há mais de **60 dias** é expurgado de forma automatizada e transparente para evitar consumo desnecessário de disco no servidor.
+- **Camadas de Expurgo**:
+  1. **Banco de Dados Relacional**:
+     - Procedure `sp_limpar_projetos_expirados` adicionada a [`app/database/scripts/script.sql`](file:///c:/xampp/xampp2/htdocs/integrador-Updatado/app/database/scripts/script.sql) e [`app/database/scripts/limpar_projetos_antigos.sql`](file:///c:/xampp/xampp2/htdocs/integrador-Updatado/app/database/scripts/limpar_projetos_antigos.sql).
+     - Métodos `removerProjetosExpirados` integrados a `ProjetoRepository` e `ProjetoService`, removendo registros que excederam o `prazo_de_vida` (60 dias) ou cuja data de criação seja superior a 60 dias.
+  2. **Arquivos Físicos Compactados**:
+     - Remoção de arquivos `.zip` associados aos projetos expirados em `app/projetos/downloads/` e diretórios públicos.
+  3. **Histórico em JSON (`usuario_{id}.json`)**:
+     - Método `aplicarRemocaoAutomaticaPorIdade` em `ProjetoController`, que inspeciona carimbos de data/hora (`criado_em`) e remove registros com mais de 60 dias.
+  4. **Rotina Global e Executável CLI**:
+     - Método `limparProjetosExpiradosSistema` acionado na sincronização periódica de histórico e script dedicado em linha de comando [`app/database/scripts/limpar_projetos_antigos.php`](file:///c:/xampp/xampp2/htdocs/integrador-Updatado/app/database/scripts/limpar_projetos_antigos.php) para execução via agendador de tarefas / crontab.
+- **Transparência Visual**:
+  - Mensagens informativas de retenção de 60 dias atualizadas nas telas do Histórico ([`app/views/projetos/historico.php`](file:///c:/xampp/xampp2/htdocs/integrador-Updatado/app/views/projetos/historico.php)) e de geração do MVC Creator ([`app/views/projetos/mvcCreator/gerar.php`](file:///c:/xampp/xampp2/htdocs/integrador-Updatado/app/views/projetos/mvcCreator/gerar.php)).
+
+### 5.2 Alerta Visual e Solicitação de Senha na Exclusão de Banco de Dados
+- **Identidade Visual Padronizada**:
+  - O modal de confirmação de exclusão do banco de dados no PHPMeuAmigo ([`app/views/projetos/phpmeuamigo.php`](file:///c:/xampp/xampp2/htdocs/integrador-Updatado/app/views/projetos/phpmeuamigo.php)) foi alinhado com a identidade visual do DevStudio (`DM Sans`, tons temáticos de perigo com borda avermelhada, ícone `bi-trash3-fill` e aviso de ação crítica irreversível).
+  - Integrado o elemento de alerta inline `#phpma-modal-delete-alert` com classes `.alert-danger`, `.alert-warning` e disparo sincronizado com o sistema global de toasts `window.devstudioAlert`.
+- **Autenticação Obrigatória por Senha**:
+  - Inclusão do campo ergonômico de senha com botão de alternância de visibilidade ("olhinho") no modal de exclusão.
+  - Validação estrita no frontend (`public/assets/js/phpmeuamigo.js`), alertando visualmente o usuário caso tente prosseguir sem preencher a senha.
+  - Validação criptográfica no backend (`PhpMeuAmigoController::excluirBanco`): valida a senha informada contra o hash do usuário logado via `password_verify` antes de autorizar a remoção do banco de dados. Em caso de senha incorreta ou ausente, a operação é rejeitada com feedback visual amigável e explicativo.
+  - Registro de auditoria em `LogService` detalhando a exclusão após autenticação bem-sucedida.

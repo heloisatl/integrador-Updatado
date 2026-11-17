@@ -565,7 +565,7 @@ $historicoPorModulo = [
 
             <div class="historico-aviso-limite" role="note">
                 <span class="historico-aviso-icone" aria-hidden="true">i</span>
-                <span><strong>Limite do histórico:</strong> são mantidos até <?= $limiteHistorico ?> projetos no total. Ao salvar um novo projeto quando o limite estiver cheio, o mais antigo será removido automaticamente.</span>
+                <span><strong>Armazenamento e Retenção:</strong> Projetos armazenados no sistema são removidos automaticamente após 60 dias para evitar sobrecarga de armazenamento no servidor. Além disso, cada usuário pode manter até <?= $limiteHistorico ?> projetos por módulo (ao atingir a cota, o projeto mais antigo é substituído automaticamente).</span>
             </div>
 
             <section class="historico-panel">

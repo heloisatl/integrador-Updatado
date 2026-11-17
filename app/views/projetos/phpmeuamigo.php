@@ -256,26 +256,54 @@ $hostPadrao = $isLoopback ? 'localhost' : $clientIp;
 
     <!-- Modal de Confirmação de Exclusão do Banco de Dados (DevStudio Identity) -->
     <div id="phpma-modal-confirm-delete" class="phpma-modal-overlay">
-        <div class="phpma-modal-content" style="max-width: 480px;">
+        <div class="phpma-modal-content" style="max-width: 490px;">
             <div class="phpma-modal-head">
-                <h3 style="color: #ff6b6b;"><i class="bi bi-trash" style="color: #ff6b6b;"></i> Excluir Banco de Dados</h3>
+                <h3 style="color: #ef4444;"><i class="bi bi-trash3-fill" style="color: #ef4444;"></i> Excluir Banco de Dados</h3>
                 <button type="button" class="btn-icon-danger" onclick="window.phpmaCloseDeleteModal()">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
 
-            <div style="padding: 10px 0 16px; font-size: 14px; line-height: 1.6; color: var(--text);">
-                <p>Tem certeza que deseja excluir o banco de dados <strong id="phpma-delete-banco-nome" style="color: var(--accent);"></strong> do DevStudio?</p>
-                <div style="margin-top: 14px; padding: 12px 14px; background: rgba(255, 107, 107, 0.1); border: 1px solid rgba(255, 107, 107, 0.25); border-radius: 8px; font-size: 13px; color: var(--text); display: flex; align-items: flex-start; gap: 10px;">
-                    <i class="bi bi-exclamation-triangle" style="color: #ff6b6b; font-size: 16px; flex-shrink: 0; margin-top: 2px;"></i>
-                    <span>Todas as tabelas e atributos associados serão excluídos do ambiente de modelagem.</span>
+            <!-- Alerta visual interno DevStudio Identity -->
+            <div id="phpma-modal-delete-alert" class="phpma-inline-alert" style="display: none; margin-bottom: 16px;">
+                <div class="phpma-inline-alert-body">
+                    <div class="phpma-inline-alert-msg"></div>
+                </div>
+            </div>
+
+            <div style="padding: 6px 0 16px; font-size: 14px; line-height: 1.6; color: var(--text);">
+                <p>Tem certeza que deseja excluir o banco de dados <strong id="phpma-delete-banco-nome" style="color: var(--accent);"></strong> da plataforma DevStudio?</p>
+                
+                <!-- Alerta visual de ação crítica e irreversível -->
+                <div style="margin-top: 14px; padding: 14px 16px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-left: 3px solid #ef4444; border-radius: 8px; font-size: 13px; color: var(--text); display: flex; align-items: flex-start; gap: 12px; line-height: 1.5;">
+                    <i class="bi bi-exclamation-triangle-fill" style="color: #ef4444; font-size: 18px; flex-shrink: 0; margin-top: 2px;"></i>
+                    <div>
+                        <strong style="color: #ef4444; display: block; margin-bottom: 2px;">Ação Estritamente Irreversível</strong>
+                        <span>Todas as tabelas, colunas e atributos associados serão excluídos permanentemente do ambiente de modelagem.</span>
+                    </div>
+                </div>
+
+                <!-- Solicitação de Senha para Autorização -->
+                <div class="form-group field-full" style="margin-top: 18px; text-align: left;">
+                    <label for="phpma-delete-senha" style="font-weight: 600; font-size: 13.5px; color: var(--text); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                        <i class="bi bi-shield-lock" style="color: var(--accent);"></i> Confirme sua senha para autorizar:
+                    </label>
+                    <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                        <input type="password" id="phpma-delete-senha" name="senha" placeholder="Digite sua senha de usuário" autocomplete="current-password" style="width: 100%; padding: 11px 44px 11px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;">
+                        <button type="button" id="btnToggleSenhaExcluirBanco" class="btn-toggle-password" title="Mostrar/ocultar senha" style="position: absolute; right: 8px; background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px;" onclick="window.phpmaTogglePasswordVisibility('phpma-delete-senha', this)">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <span style="font-size: 12px; color: var(--muted); margin-top: 6px; display: block;">
+                        Por segurança, confirme sua senha cadastrada no DevStudio para autorizar a exclusão deste banco.
+                    </span>
                 </div>
             </div>
 
             <div class="phpma-modal-foot">
                 <button type="button" class="btn btn-secondary" onclick="window.phpmaCloseDeleteModal()">Cancelar</button>
                 <button type="button" id="phpma-btn-confirm-delete-action" class="btn btn-primary" style="background: #e03131; border-color: #c92a2a; color: #fff;" onclick="window.phpmaConfirmarExclusaoBanco()">
-                    <i class="bi bi-trash"></i> Excluir Definitivamente
+                    <i class="bi bi-trash3-fill"></i> Excluir Definitivamente
                 </button>
             </div>
         </div>

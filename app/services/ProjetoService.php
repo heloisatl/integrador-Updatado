@@ -62,6 +62,10 @@ class ProjetoService{
         return $this->projetoRepository->apagarProjetoMaisAntigoSeLimite($idUsuario, $limite);
     }
 
+    public function removerProjetosExpirados(int $dias = 60): array {
+        return $this->projetoRepository->removerProjetosExpirados($dias);
+    }
+
     private function removerArquivoZipProjeto(string $nomeProjeto, int $idProjeto): void {
         $dirDownloads = __DIR__ . '/../projetos/downloads';
         if (!is_dir($dirDownloads)) {

@@ -321,4 +321,26 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- -----------------------------------------------------
+-- Procedure: sp_limpar_projetos_expirados
+-- Remove projetos armazenados há mais de 60 dias (ou prazo_de_vida)
+-- para evitar sobrecarga de armazenamento no servidor.
+-- -----------------------------------------------------
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `sp_limpar_projetos_expirados`$$
+CREATE PROCEDURE `sp_limpar_projetos_expirados`(
+    IN p_dias INT
+)
+BEGIN
+    IF p_dias IS NULL OR p_dias <= 0 THEN
+        SET p_dias = 60;
+    END IF;
+
+    DELETE FROM `projeto` 
+    WHERE `data_criacao` < DATE_SUB(NOW(), INTERVAL p_dias DAY)
+       OR (`prazo_de_vida` > 0 AND DATEDIFF(NOW(), `data_criacao`) >= `prazo_de_vida`);
+END$$
+DELIMITER ;
+
+
 

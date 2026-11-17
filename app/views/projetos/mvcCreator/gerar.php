@@ -8,7 +8,7 @@
     <?php else: ?>
         <div class="mvc-aviso-info" role="status" style="margin-bottom: 16px;">
             <i class="bi bi-info-circle" aria-hidden="true" style="font-size: 16px; flex-shrink: 0;"></i>
-            <span><strong>Aviso de Limite de Projetos:</strong> Cada usuário pode manter até 10 projetos no sistema. Ao atingir o limite de 10 projetos, o projeto mais antigo será <strong>automaticamente apagado</strong> para dar lugar ao novo.</span>
+            <span><strong>Aviso de Armazenamento e Limite:</strong> Projetos armazenados no sistema são removidos automaticamente após 60 dias para evitar sobrecarga no servidor. Além disso, cada usuário pode manter até 10 projetos no sistema (ao atingir o limite, o mais antigo será <strong>automaticamente apagado</strong> para dar lugar ao novo).</span>
         </div>
     <?php endif; ?>
 

@@ -634,6 +634,17 @@ class ProjetoController extends Controller{
         return $usuarioId;
     }
 
+    private function getHistoricoUsuarioIdOpcional(): ?int {
+        $usuario = $_SESSION['usuario_logado'] ?? null;
+        if ($usuario && method_exists($usuario, 'getIdUsuario')) {
+            $id = (int) $usuario->getIdUsuario();
+            if ($id > 0) {
+                return $id;
+            }
+        }
+        return null;
+    }
+
     private function getHistoricoStoragePath(?int $usuarioId = null): string {
         $usuarioId = $usuarioId ?? $this->getHistoricoUsuarioId();
         return __DIR__ . '/../projetos/historicos/usuario_' . $usuarioId . '.json';
@@ -682,7 +693,7 @@ class ProjetoController extends Controller{
         file_put_contents($caminho, json_encode([], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
-    private function normalizarItemHistorico(array $item): array {
+    private function normalizarItemHistorico(array $item, ?int $fallbackUsuarioId = null): array {
         $id = trim((string)($item['id'] ?? ''));
         if ($id === '') {
             $id = 'proj_' . substr(hash('sha256', uniqid((string) microtime(true), true)), 0, 12);
@@ -710,12 +721,14 @@ class ProjetoController extends Controller{
             }
         }
 
+        $usuarioIdItem = isset($item['usuario_id']) ? (int) $item['usuario_id'] : ($fallbackUsuarioId ?? ($this->getHistoricoUsuarioIdOpcional() ?? 0));
+
         return [
             'id' => $id,
             'nome' => $nome,
             'modulo' => $modulo,
             'criado_em' => $criadoEm,
-            'usuario_id' => (int) ($item['usuario_id'] ?? $this->getHistoricoUsuarioId()),
+            'usuario_id' => $usuarioIdItem,
             'conteudo' => $conteudo,
         ];
     }
@@ -733,9 +746,16 @@ class ProjetoController extends Controller{
         }
     }
 
-    private function lerJsonArrayValido(string $caminho): array {
+    private function lerJsonArrayValido(string $caminho, ?int $usuarioId = null): array {
         $this->inicializarArquivoJson($caminho);
-        $usuarioId = $this->getHistoricoUsuarioId();
+
+        if ($usuarioId === null) {
+            if (preg_match('/usuario_(\d+)\.json$/', $caminho, $m)) {
+                $usuarioId = (int) $m[1];
+            } else {
+                $usuarioId = $this->getHistoricoUsuarioIdOpcional();
+            }
+        }
 
         $conteudo = file_get_contents($caminho);
         if ($conteudo === false || trim($conteudo) === '') {
@@ -754,8 +774,8 @@ class ProjetoController extends Controller{
             if (!is_array($item)) {
                 continue;
             }
-            $itemNormalizado = $this->normalizarItemHistorico($item);
-            if ($itemNormalizado['usuario_id'] === $usuarioId) {
+            $itemNormalizado = $this->normalizarItemHistorico($item, $usuarioId);
+            if ($usuarioId === null || $usuarioId <= 0 || $itemNormalizado['usuario_id'] === $usuarioId) {
                 $itensValidos[] = $itemNormalizado;
             }
         }
@@ -763,14 +783,22 @@ class ProjetoController extends Controller{
         return array_values($itensValidos);
     }
 
-    private function salvarJsonArrayValido(string $caminho, array $itens): void {
+    private function salvarJsonArrayValido(string $caminho, array $itens, ?int $usuarioId = null): void {
         $this->inicializarArquivoJson($caminho);
+
+        if ($usuarioId === null) {
+            if (preg_match('/usuario_(\d+)\.json$/', $caminho, $m)) {
+                $usuarioId = (int) $m[1];
+            } else {
+                $usuarioId = $this->getHistoricoUsuarioIdOpcional();
+            }
+        }
 
         $dados = [];
         foreach ($itens as $item) {
             if (is_array($item)) {
-                $itemNormalizado = $this->normalizarItemHistorico($item);
-                if ($itemNormalizado['usuario_id'] === $this->getHistoricoUsuarioId()) {
+                $itemNormalizado = $this->normalizarItemHistorico($item, $usuarioId);
+                if ($usuarioId === null || $usuarioId <= 0 || $itemNormalizado['usuario_id'] === $usuarioId) {
                     $dados[] = $itemNormalizado;
                 }
             }
@@ -834,7 +862,7 @@ class ProjetoController extends Controller{
     private function expurgarArquivosEDadosProjeto(array $item): void {
         $nomeProjeto = trim((string)($item['nome'] ?? ''));
         $modulo = trim((string)($item['modulo'] ?? ''));
-        $usuarioId = (int)($item['usuario_id'] ?? $this->getHistoricoUsuarioId());
+        $usuarioId = (int)($item['usuario_id'] ?? ($this->getHistoricoUsuarioIdOpcional() ?? 0));
         $payload = is_array($item['conteudo'] ?? null) ? $item['conteudo'] : [];
 
         // 1. Apaga arquivo ZIP físico se existir em diretórios de download
@@ -880,9 +908,100 @@ class ProjetoController extends Controller{
         $this->migrarHistoricoCompartilhadoAdmin($caminhoHistoricoUsuario);
         $historico = $this->lerJsonArrayValido($caminhoHistoricoUsuario);
 
+        // 1. Remove automaticamente projetos com mais de 60 dias de armazenamento
+        $historico = $this->aplicarRemocaoAutomaticaPorIdade($historico, 60);
+
+        // 2. Mantém os limites independentes por módulo (até 10 por módulo)
         $historico = $this->aplicarLimiteIndependentePorModulo($historico, 10);
         $this->salvarJsonArrayValido($caminhoHistoricoUsuario, $historico);
+
+        // 3. Executa a limpeza global de projetos expirados no banco e arquivos físicos
+        $this->limparProjetosExpiradosSistema(60);
+
         return $historico;
+    }
+
+    /**
+     * Remove automaticamente do histórico itens com mais de 60 dias de existência,
+     * expurgando arquivos físicos e registros associados para liberar armazenamento.
+     */
+    private function aplicarRemocaoAutomaticaPorIdade(array $historico, int $dias = 60): array {
+        $resultado = [];
+        $agora = time();
+        $limiteSegundos = $dias * 86400;
+
+        foreach ($historico as $item) {
+            $norm = $this->normalizarItemHistorico($item);
+            $criadoEm = $this->converterStringEmData($norm['criado_em'] ?? $norm['data'] ?? ($norm['conteudo']['gerado_em'] ?? null));
+
+            if ($criadoEm) {
+                $tempoCriacao = strtotime($criadoEm);
+                if ($tempoCriacao > 0 && ($agora - $tempoCriacao) >= $limiteSegundos) {
+                    $this->expurgarArquivosEDadosProjeto($norm);
+                    \app\services\LogService::registrar("Remoção automática de projeto expirado (> 60 dias): " . ($norm['nome'] ?? 'Projeto'));
+                    continue;
+                }
+            }
+
+            $resultado[] = $norm;
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * Varre todo o sistema (banco de dados, arquivos JSON de todos os usuários e pasta de downloads)
+     * removendo qualquer projeto armazenado há mais de 60 dias para evitar sobrecarga no servidor.
+     */
+    public function limparProjetosExpiradosSistema(int $dias = 60): int {
+        $totalRemovidos = 0;
+
+        // 1. Limpeza no banco de dados (tabela projeto e estilos associados)
+        try {
+            $removidosDb = $this->getProjetoService()->removerProjetosExpirados($dias);
+            $totalRemovidos += count($removidosDb);
+        } catch (\Throwable $t) {
+            // Silencia caso banco não esteja acessível
+        }
+
+        // 2. Limpeza em todos os arquivos de histórico dos usuários
+        $dirHistoricos = __DIR__ . '/../projetos/historicos';
+        if (is_dir($dirHistoricos)) {
+            $arquivosJson = glob($dirHistoricos . '/usuario_*.json') ?: [];
+            $compartilhado = __DIR__ . '/../projetos/historico_compartilhado_migrado.json';
+            if (is_file($compartilhado)) {
+                $arquivosJson[] = $compartilhado;
+            }
+
+            foreach ($arquivosJson as $caminhoJson) {
+                $itens = $this->lerJsonArrayValido($caminhoJson);
+                $totalAntes = count($itens);
+                $itensLimpos = $this->aplicarRemocaoAutomaticaPorIdade($itens, $dias);
+                if (count($itensLimpos) !== $totalAntes) {
+                    $totalRemovidos += ($totalAntes - count($itensLimpos));
+                    $this->salvarJsonArrayValido($caminhoJson, $itensLimpos);
+                }
+            }
+        }
+
+        // 3. Limpeza de arquivos ZIP órfãos ou expirados em app/projetos/downloads
+        $dirDownloads = __DIR__ . '/../projetos/downloads';
+        if (is_dir($dirDownloads)) {
+            $zips = glob($dirDownloads . '/*.zip') ?: [];
+            $agora = time();
+            $limiteSegundos = $dias * 86400;
+            foreach ($zips as $zipFile) {
+                if (is_file($zipFile)) {
+                    $mtime = filemtime($zipFile);
+                    if ($mtime && ($agora - $mtime) >= $limiteSegundos) {
+                        @unlink($zipFile);
+                        $totalRemovidos++;
+                    }
+                }
+            }
+        }
+
+        return $totalRemovidos;
     }
 
     private function obterItemPorId(string $id): ?array {

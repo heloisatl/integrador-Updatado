@@ -648,6 +648,38 @@
     background: rgba(91, 106, 240, 0.18);
 }
 
+.phpma-inline-alert.alert-danger {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: #ef4444;
+}
+.phpma-inline-alert.alert-danger:hover {
+    background: rgba(239, 68, 68, 0.18);
+}
+
+.phpma-inline-alert.alert-warning {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: #f59e0b;
+}
+.phpma-inline-alert.alert-warning:hover {
+    background: rgba(245, 158, 11, 0.18);
+}
+
+.phpma-inline-alert.alert-success {
+    background: rgba(34, 197, 94, 0.12);
+    border-color: #22c55e;
+}
+.phpma-inline-alert.alert-success:hover {
+    background: rgba(34, 197, 94, 0.18);
+}
+
+.phpma-inline-alert.alert-info {
+    background: rgba(91, 106, 240, 0.12);
+    border-color: #5B6AF0;
+}
+.phpma-inline-alert.alert-info:hover {
+    background: rgba(91, 106, 240, 0.18);
+}
+
 .phpma-inline-alert-body {
     flex: 1;
     min-width: 0;

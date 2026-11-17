@@ -96,6 +96,97 @@ class ProjetoRepository{
         return null;
     }
 
+    /**
+     * Remove automaticamente projetos armazenados há mais de 60 dias (RN de retenção),
+     * excluindo os arquivos físicos associados (.zip) e os registros do banco de dados.
+     * Retorna a lista dos projetos removidos.
+     */
+    public function removerProjetosExpirados(int $dias = 60): array {
+        if ($dias <= 0) {
+            $dias = 60;
+        }
+
+        try {
+            $sqlSelect = "SELECT `id_projeto`, `id_usuario`, `nome_projeto`, `caminho_armazenamento`, `fk_estilo`, `data_criacao` 
+                          FROM `projeto` 
+                          WHERE `data_criacao` < DATE_SUB(NOW(), INTERVAL :dias DAY)
+                             OR (`prazo_de_vida` > 0 AND DATEDIFF(NOW(), `data_criacao`) >= `prazo_de_vida`)";
+            $stmSelect = $this->conn->prepare($sqlSelect);
+            $stmSelect->bindValue(':dias', $dias, PDO::PARAM_INT);
+            $stmSelect->execute();
+            $expirados = $stmSelect->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($expirados)) {
+                return [];
+            }
+
+            $idsParaExcluir = [];
+            $estilosParaExcluir = [];
+            $dirDownloads = __DIR__ . '/../projetos/downloads';
+            $dirPublicDownloads = __DIR__ . '/../../public/downloads';
+
+            foreach ($expirados as $proj) {
+                $id = (int)$proj['id_projeto'];
+                $nome = trim((string)$proj['nome_projeto']);
+                $caminho = trim((string)$proj['caminho_armazenamento']);
+                $idsParaExcluir[] = $id;
+
+                if (!empty($proj['fk_estilo'])) {
+                    $estilosParaExcluir[] = (int)$proj['fk_estilo'];
+                }
+
+                // Remoção física de arquivos compactados .zip
+                $candidatos = [];
+                if ($nome !== '' && $id > 0) {
+                    $candidatos[] = $dirDownloads . '/' . $nome . '-' . $id . '.zip';
+                }
+                if ($nome !== '') {
+                    $candidatos[] = $dirDownloads . '/' . $nome . '.zip';
+                    $candidatos[] = $dirPublicDownloads . '/' . $nome . '.zip';
+                }
+                if ($caminho !== '' && file_exists($caminho)) {
+                    $candidatos[] = $caminho;
+                }
+
+                foreach ($candidatos as $arquivo) {
+                    if (is_file($arquivo)) {
+                        @unlink($arquivo);
+                    }
+                }
+
+                if ($nome !== '') {
+                    $limpo = preg_replace('/[^a-zA-Z0-9_\-]+/', '_', $nome);
+                    foreach ([$dirDownloads, $dirPublicDownloads] as $d) {
+                        if (is_dir($d)) {
+                            $matches = glob($d . '/' . $limpo . '*.zip');
+                            if ($matches) {
+                                foreach ($matches as $m) {
+                                    if (is_file($m)) @unlink($m);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!empty($idsParaExcluir)) {
+                $placeholders = implode(',', array_fill(0, count($idsParaExcluir), '?'));
+                $sqlDelete = "DELETE FROM `projeto` WHERE `id_projeto` IN ({$placeholders})";
+                $stmDel = $this->conn->prepare($sqlDelete);
+                $stmDel->execute($idsParaExcluir);
+            }
+
+            if (!empty($estilosParaExcluir)) {
+                $inEstilos = implode(',', array_map('intval', array_unique($estilosParaExcluir)));
+                $this->conn->exec("DELETE FROM `estilo` WHERE `id_estilo` IN ({$inEstilos})");
+            }
+
+            return $expirados;
+        } catch (\Throwable $t) {
+            return [];
+        }
+    }
+
     public function deleteByIdAndUsuario(int $idProjeto, int $idUsuario): bool {
         if ($idProjeto <= 0 || $idUsuario <= 0) {
             return false;

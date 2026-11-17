@@ -97,31 +97,50 @@ class PhpMeuAmigoController extends Controller{
         $this->autenticacaoJsonRequired();
 
         $id_usuario = $_SESSION['usuario_logado']->getIdUsuario();
-        $id_banco   = filter_input(INPUT_POST, 'id_banco', FILTER_VALIDATE_INT);
+        $id_banco   = filter_input(INPUT_POST, 'id_banco', FILTER_VALIDATE_INT) ?: (int)($_POST['id_banco'] ?? 0);
+        $senha      = filter_input(INPUT_POST, 'senha') ?? ($_POST['senha'] ?? null);
 
         if (!$id_banco) {
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['sucesso' => false, 'mensagem' => 'ID do banco nao informado.']);
+            @header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['sucesso' => false, 'mensagem' => 'ID do banco não informado.']);
+            return;
+        }
+
+        if ($senha === null || trim((string)$senha) === '') {
+            @header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['sucesso' => false, 'mensagem' => 'A senha de usuário é obrigatória para autorizar a exclusão do banco de dados.']);
             return;
         }
 
         try {
+            // Valida a senha do usuário autenticado antes de prosseguir com a exclusão
+            $usuarioService = new \app\services\UsuarioService();
+            $emailUsuario   = $_SESSION['usuario_logado']->getEmail();
+            $usuario        = $usuarioService->getUsuarioPorEmail($emailUsuario);
+
+            if (!$usuario || !password_verify(trim((string)$senha), $usuario->getSenhaUsuario())) {
+                @header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['sucesso' => false, 'mensagem' => 'Senha incorreta. Não foi possível autorizar a exclusão do banco de dados.']);
+                return;
+            }
+
             // Garante que o banco pertence ao usuario logado antes de excluir
             $banco = $this->bancoService->getBancoById($id_banco);
             if (!$banco || (int)$banco['fk_usuario'] !== (int)$id_usuario) {
-                header('Content-Type: application/json; charset=utf-8');
-                echo json_encode(['sucesso' => false, 'mensagem' => 'Banco nao encontrado ou permissao negada.']);
+                @header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['sucesso' => false, 'mensagem' => 'Banco não encontrado ou permissão negada.']);
                 return;
             }
 
             // Tabelas e atributos sao excluidos em cascata no mvc_creator
+            $nomeBanco = $banco['nome_banco'] ?? ('ID #' . $id_banco);
             $this->bancoService->delete($id_banco);
-            \app\services\LogService::registrar("Banco de dados excluído no modelador: " . ($banco['nome_banco'] ?? 'ID #' . $id_banco));
+            \app\services\LogService::registrar("Banco de dados excluído no modelador após autenticação por senha: " . $nomeBanco);
 
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['sucesso' => true, 'mensagem' => 'Banco e sua estrutura foram excluidos do DevStudio!']);
+            @header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['sucesso' => true, 'mensagem' => 'Banco de dados "' . htmlspecialchars($nomeBanco) . '" e sua estrutura foram excluídos do DevStudio!']);
         } catch (\Exception $e) {
-            header('Content-Type: application/json; charset=utf-8');
+            @header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['sucesso' => false, 'mensagem' => 'Erro ao excluir banco: ' . $e->getMessage()]);
         }
     }
