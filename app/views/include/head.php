@@ -24,7 +24,7 @@
     <style>
         * {
 
-            /* Para navegadores baseados no Chromium (Chrome, Edge) */
+            
             ::-webkit-scrollbar {
                 width: 5px;
                 /* Largura da barra vertical */
@@ -60,9 +60,9 @@
         }
 
         :root {
-            --bg: #ffffff;
-            --surface: #f5f5f5;
-            --panel: #ffffff;
+            --bg: #e3edf3;
+            --surface: #c7d5dd;
+            --panel: #fbfdff;
             --border: #e0e0e0;
             --accent: #5b6af0;
             --accent-h: #4a59df;

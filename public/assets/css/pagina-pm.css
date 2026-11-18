@@ -3,6 +3,23 @@
     width: 100%;
 }
 
+.pm-page-header > div {
+    max-width: 760px;
+    min-width: 0;
+}
+
+.pm-page-header .page-paragraph {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 12px 0 0;
+    padding: 10px 14px;
+}
+
 .pm-etapa,
 .pm-cartao {
     background: var(--panel);
@@ -239,6 +256,11 @@ output {
     .pm-etapa,
     .pm-cartao {
         padding: 18px;
+    }
+
+    .pm-page-header .page-paragraph {
+        font-size: 13px;
+        padding: 9px 12px;
     }
 
     .pm-campo-completo,

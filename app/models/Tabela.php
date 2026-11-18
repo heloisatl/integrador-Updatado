@@ -19,20 +19,11 @@ class Tabela{
             $this->fk_banco = $fk_banco;
             $this->nome_tabela = $nomeTabela;
             $this->nome_tabelaUC = ucfirst($this->nome_tabela);
-            // $atributos = $projetoRepository->getAtributos($this->nome_tabela);
-            // $this->attInputs = [];
-           
-            // foreach($this->atributos as $att){
-            //     if($att->Key!='PRI')$this->attInputs[] = Tabela::inputs($att->Type,$att->Field);
-            // }
+            
         }catch(Throwable $th){
             throw $th;
         }
     }
-
-    // public function getAttInputs(){
-    //     return $this->attInputs;
-    // }
 
     
 

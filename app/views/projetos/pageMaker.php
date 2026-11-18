@@ -11,6 +11,7 @@ include_once(__DIR__ . "/../include/navigation.php");
                 <h1 class="page-title">
                     <i class="bi bi-file-earmark-code"></i> PageMaker
                 </h1>
+                <p class="page-paragraph">Estilize a página conforme suas necessidades e visualize a prévia depois que terminar</p>
             </div>
         </header>
 
@@ -228,7 +229,7 @@ include_once(__DIR__ . "/../include/navigation.php");
                 </div>
                 <div class="pm-campo">
                     <label>LINK DO BOTÃO</label>
-                    <input type="url" id="linkBotao" value="https://exemplo.com">
+                    <input type="url" id="linkBotao" value="">
                 </div>
                 <div class="pm-campo">
                     <label>COR DO BOTÃO</label>

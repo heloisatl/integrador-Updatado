@@ -8,7 +8,6 @@ require_once __DIR__ . '/../app/config/Config.php';
 
 use app\core\Router;
 
-// Servir arquivos estáticos solicitados na raiz (como /favicon.svg, /favicon.ico)
 $uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 if ($uriPath !== '/' && file_exists(__DIR__ . $uriPath) && is_file(__DIR__ . $uriPath)) {
     $ext = strtolower(pathinfo($uriPath, PATHINFO_EXTENSION));

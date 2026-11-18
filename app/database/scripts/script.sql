@@ -234,58 +234,7 @@ INSERT INTO `usuario` (`nome`, `email`, `senha_usuario`, `tipo_perfil`)
 VALUES ('Administrador', 'admin@devstudio.com', '$2y$10$xB4P7YzuYdTGUTGgao9Qce6kvm7x/QuWmB1umLASZXE8myB1bmPhS', 'admin');
 
 
--- -----------------------------------------------------
--- SCRIPT DE UPDATE / MIGRAÇÃO DA TABELA estilo (PageMaker)
--- Execute este bloco caso você já possua um banco de dados
--- criado anteriormente e deseje atualizá-lo sem recriar o schema:
--- -----------------------------------------------------
--- ALTER TABLE `estilo`
---   ADD COLUMN IF NOT EXISTS `nome_arquivo` VARCHAR(60) NULL DEFAULT 'index.html',
---   ADD COLUMN IF NOT EXISTS `texto_cabecalho` VARCHAR(100) NULL DEFAULT 'Meu Projeto',
---   ADD COLUMN IF NOT EXISTS `titulo_aba` VARCHAR(100) NULL DEFAULT 'Meu Projeto',
---   ADD COLUMN IF NOT EXISTS `cor_fundo` VARCHAR(20) NOT NULL DEFAULT '#ffffff',
---   ADD COLUMN IF NOT EXISTS `cor_fonte` VARCHAR(20) NOT NULL DEFAULT '#000000',
---   MODIFY COLUMN `tamanho_fonte` VARCHAR(20) NOT NULL DEFAULT 'medium',
---   ADD COLUMN IF NOT EXISTS `tipo_layout` VARCHAR(10) NOT NULL DEFAULT '1',
---   ADD COLUMN IF NOT EXISTS `alinhamento_horizontal` VARCHAR(20) NOT NULL DEFAULT 'flex-start',
---   ADD COLUMN IF NOT EXISTS `alinhamento_vertical` VARCHAR(20) NOT NULL DEFAULT 'flex-start',
---   ADD COLUMN IF NOT EXISTS `margem_pagina` INT NOT NULL DEFAULT 24,
---   ADD COLUMN IF NOT EXISTS `preenchimento_pagina` INT NOT NULL DEFAULT 24,
---   ADD COLUMN IF NOT EXISTS `cabecalho_fixo` TINYINT(1) NOT NULL DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS `url_fonte` VARCHAR(255) NULL,
---   ADD COLUMN IF NOT EXISTS `peso_fonte` VARCHAR(10) NOT NULL DEFAULT '400',
---   ADD COLUMN IF NOT EXISTS `altura_linha` DECIMAL(3,1) NOT NULL DEFAULT 1.5,
---   ADD COLUMN IF NOT EXISTS `raio_borda` INT NOT NULL DEFAULT 8,
---   ADD COLUMN IF NOT EXISTS `tipo_sombra` VARCHAR(20) NOT NULL DEFAULT 'none',
---   ADD COLUMN IF NOT EXISTS `imagem_fundo` VARCHAR(255) NULL,
---   ADD COLUMN IF NOT EXISTS `cor_gradiente_inicial` VARCHAR(20) NOT NULL DEFAULT '#ffffff',
---   ADD COLUMN IF NOT EXISTS `cor_gradiente_final` VARCHAR(20) NOT NULL DEFAULT '#e8e8ff',
---   ADD COLUMN IF NOT EXISTS `opacidade_fundo` INT NOT NULL DEFAULT 100,
---   ADD COLUMN IF NOT EXISTS `sem_navegacao` TINYINT(1) NOT NULL DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS `cor_links` VARCHAR(20) NOT NULL DEFAULT '#0000ff',
---   ADD COLUMN IF NOT EXISTS `estilo_links` TINYINT(1) NOT NULL DEFAULT 1,
---   ADD COLUMN IF NOT EXISTS `texto_pagina` MEDIUMTEXT NULL,
---   ADD COLUMN IF NOT EXISTS `nome_imagem` VARCHAR(100) NULL,
---   ADD COLUMN IF NOT EXISTS `url_imagem` VARCHAR(255) NULL,
---   ADD COLUMN IF NOT EXISTS `largura_imagem` INT NULL,
---   ADD COLUMN IF NOT EXISTS `alt_imagem` VARCHAR(100) NULL,
---   ADD COLUMN IF NOT EXISTS `alt_text_imagem` VARCHAR(100) NULL,
---   ADD COLUMN IF NOT EXISTS `incluir_lista` TINYINT(1) NOT NULL DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS `incluir_tabela` TINYINT(1) NOT NULL DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS `incluir_rodape` TINYINT(1) NOT NULL DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS `incluir_card` TINYINT(1) NOT NULL DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS `incluir_formulario` TINYINT(1) NOT NULL DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS `texto_botao` VARCHAR(60) NOT NULL DEFAULT 'Saiba mais',
---   ADD COLUMN IF NOT EXISTS `link_botao` VARCHAR(255) NOT NULL DEFAULT 'https://exemplo.com',
---   ADD COLUMN IF NOT EXISTS `cor_botao` VARCHAR(20) NOT NULL DEFAULT '#5b6af0',
---   ADD COLUMN IF NOT EXISTS `cor_botao_hover` VARCHAR(20) NOT NULL DEFAULT '#4a59df',
---   ADD COLUMN IF NOT EXISTS `ordem_elementos` VARCHAR(50) NOT NULL DEFAULT 'texto-imagem-lista-tabela',
---   ADD COLUMN IF NOT EXISTS `html_customizado` MEDIUMTEXT NULL;
 
--- -----------------------------------------------------
--- Procedure: sp_apagar_projeto_mais_antigo_se_limite
--- Apaga o projeto mais antigo caso o usuário alcance a cota de 10 projetos
--- -----------------------------------------------------
 DELIMITER $$
 DROP PROCEDURE IF EXISTS `sp_apagar_projeto_mais_antigo_se_limite`$$
 CREATE PROCEDURE `sp_apagar_projeto_mais_antigo_se_limite`(

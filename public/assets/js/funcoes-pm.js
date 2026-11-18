@@ -70,7 +70,8 @@
         return `rgba(${valores.join(', ')}, ${opacidade})`;
     }
 
-    function gerarCss() {
+    function gerarCss(comComentarios = false) {
+        const comentario = (texto) => comComentarios ? `/* ${texto} */\n` : '';
         const tamanhos = { small: '14px', medium: '18px', large: '24px', outro: '18px' };
         const tamanhoSelecionado = ler('tamanhoFonte', 'medium');
         const tamanhoCustom = Number(ler('tamanhoFonteCustom', '18'));
@@ -99,7 +100,7 @@
             }
         }
 
-        return `${urlFonte ? `@import url('${urlFonte}');\n\n` : ''}:root {
+        return `${urlFonte ? `@import url('${urlFonte}');\n\n` : ''}${comentario('Variáveis de cores reutilizadas pelas regras abaixo. Duplique uma variável para criar outra cor reutilizável.')}:root {
     --cor-fundo: ${ler('corFundo', '#ffffff')};
     --cor-fonte: ${ler('corFonte', '#000000')};
     --cor-links: ${ler('corLinks', '#0000ff')};
@@ -107,7 +108,7 @@
     --cor-botao-hover: ${ler('corBotaoHover', '#4a59df')};
 }
 
-body {
+${comentario('Estilo geral da página: fundo, fonte, espaçamento e texto. Duplique a regra para criar um estilo para outra área.')}body {
     background-color: var(--cor-fundo);
     background-image: ${fundo};
     background-size: cover;
@@ -120,14 +121,14 @@ body {
     padding: ${ler('preenchimentoPagina', '24')}px;
 }
 
-header {
+${comentario('Cabeçalho da página. Duplique o elemento <header> no HTML para adicionar outro cabeçalho.')}header {
     border-radius: ${ler('raioBorda', '8')}px;
     box-shadow: ${sombra};
     padding: ${ler('preenchimentoPagina', '24')}px;
     ${marcado('cabecalhoFixo') ? 'position: sticky; top: 0; z-index: 2;' : ''}
 }
 
-.grade-conteudo {
+${comentario('Organiza os elementos principais em colunas e controla alinhamento e espaçamento.')}.grade-conteudo {
     align-items: ${ler('alinhamentoVertical', 'flex-start')};
     display: flex;
     flex-direction: row;
@@ -136,28 +137,31 @@ header {
     justify-content: ${ler('alinhamentoHorizontal', 'flex-start')};
 }
 
-.grade-conteudo > * {
+${comentario('Define a largura dos elementos filhos da área principal. Duplique elementos no HTML para preencher as colunas.')}.grade-conteudo > * {
     flex: 1 1 calc(${100 / Number(ler('tipoLayout', '1'))}% - 24px);
     min-width: 0;
 }
 
-nav a {
+${comentario('Aparência dos links de navegação. Duplique um <a> dentro de <nav> no HTML para criar outro link.')}nav a {
     color: var(--cor-links);
     margin-right: 16px;
     text-decoration: ${estilo};
 }
 
-img, .cartao-conteudo, table, .botao-cta {
+${comentario('Estilo compartilhado de borda e sombra para imagens, cartões, tabelas e botões.')}img, .cartao-conteudo, table, .botao-cta {
     border-radius: ${ler('raioBorda', '8')}px;
     box-shadow: ${sombra};
 }
 
-img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
+${comentario('Limita a imagem à largura disponível. Duplique o bloco de imagem no HTML para adicionar outra.')}img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
+${comentario('Aparência dos botões de destaque. Duplique o link com a classe botao-cta no HTML para criar outro botão.') }
 .botao-cta { background: var(--cor-botao); color: #fff; display: inline-block; padding: 10px 16px; text-decoration: none; }
 .botao-cta:hover { background: var(--cor-botao-hover); }
+${comentario('Organiza os campos do formulário. Duplique os campos no HTML para acrescentar perguntas.') }
 .formulario-contato { display: grid; gap: 12px; max-width: 520px; }
 .formulario-contato input, .formulario-contato textarea { border: 1px solid var(--cor-links); border-radius: ${ler('raioBorda', '8')}px; padding: 10px; }
 
+${comentario('Adapta o conteúdo para telas estreitas, como celulares. Ajuste o limite de largura se necessário.') }
 @media (max-width: ${larguraPrevia}px) {
     .grade-conteudo { flex-direction: column; }
     .grade-conteudo > * { flex-basis: auto; width: 100%; }
@@ -173,18 +177,19 @@ img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
     }
 
     function gerarComponentes(paraDownload = false) {
+        const comentario = (texto) => paraDownload ? `<!-- ${texto} -->\n` : '';
         const imagem = obterImagem(paraDownload);
         const textoAlternativo = ler('altTextImagem') || ler('altImagem') || ler('nomeImagem', 'Imagem do projeto');
         const imagemHtml = imagem ? `<img src="${imagem}" alt="${textoAlternativo}">` : '';
-        const card = marcado('incluirCard') ? `<article class="cartao-conteudo">${imagemHtml}<h2>${ler('textoCabecalho', 'Meu Projeto')}</h2><p>${ler('textoPagina', 'Conteúdo do card')}</p><a class="botao-cta" href="${ler('linkBotao', '#')}">${ler('textoBotao', 'Saiba mais')}</a></article>` : '';
-        const formulario = marcado('incluirFormulario') ? `<form class="formulario-contato"><input placeholder="Nome" required><input type="email" placeholder="Email" required><textarea placeholder="Mensagem" required></textarea><button class="botao-cta" type="submit">Enviar</button></form>` : '';
-        const lista = marcado('incluirLista') ? '<ul><li>Item da lista</li></ul>' : '';
-        const tabela = marcado('incluirTabela') ? '<table border="1"><tr><td>Dados</td></tr></table>' : '';
-        const rodape = marcado('incluirRodape') ? '<footer>Gerado pelo DevStudio</footer>' : '';
+        const card = marcado('incluirCard') ? `${comentario('Cartão de conteúdo. Duplique este <article> para adicionar outro cartão e altere seu título, texto e link.')}<article class="cartao-conteudo">${imagemHtml}<h2>${ler('textoCabecalho', 'Meu Projeto')}</h2><p>${ler('textoPagina', 'Conteúdo do card')}</p><a class="botao-cta" href="${ler('linkBotao', '#')}">${ler('textoBotao', 'Saiba mais')}</a></article>` : '';
+        const formulario = marcado('incluirFormulario') ? `${comentario('Formulário de exemplo. Duplique os campos para incluir perguntas; conecte-o a um serviço para receber os envios.')}<form class="formulario-contato"><input placeholder="Nome" required><input type="email" placeholder="Email" required><textarea placeholder="Mensagem" required></textarea><button class="botao-cta" type="submit">Enviar</button></form>` : '';
+        const lista = marcado('incluirLista') ? `${comentario('Lista de itens. Duplique o elemento <li> para acrescentar itens.')}<ul><li>Item da lista</li></ul>` : '';
+        const tabela = marcado('incluirTabela') ? `${comentario('Tabela simples. Duplique a linha <tr> e suas células <td> para adicionar dados.')}<table border="1"><tr><td>Dados</td></tr></table>` : '';
+        const rodape = marcado('incluirRodape') ? `${comentario('Rodapé da página. Duplique ou edite este <footer> para incluir outras informações ao final.')}<footer>Gerado pelo DevStudio</footer>` : '';
         const ordem = ler('ordemElementos', 'texto-imagem-lista-tabela').split('-');
         const elementos = {
-            texto: `<p class="bloco-texto">${ler('textoPagina', 'Conteúdo da página')}</p>`,
-            imagem: imagemHtml ? `<div class="bloco-imagem">${imagemHtml}</div>` : '',
+            texto: `${comentario('Bloco de texto. Duplique este <p> para adicionar outro parágrafo.')}<p class="bloco-texto">${ler('textoPagina', 'Conteúdo da página')}</p>`,
+            imagem: imagemHtml ? `${comentario('Bloco de imagem. Duplique esta <div> e altere o src e o alt da imagem para adicionar outra.')}<div class="bloco-imagem">${imagemHtml}</div>` : '',
             lista,
             tabela
         };
@@ -193,15 +198,25 @@ img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
     }
 
     function gerarHtml(paraDownload = false) {
+        const comentario = (texto) => paraDownload ? `    <!-- ${texto} -->\n` : '';
         const links = gerarLinks();
         const componentes = gerarComponentes(paraDownload);
         return `<!doctype html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><title>${ler('tituloAba', 'Meu Projeto')}</title><link rel="stylesheet" href="estilo.css"></head>
+${comentario('Página gerada pelo DevStudio. Edite o conteúdo abaixo conforme necessário.')}
+<head>
+    ${comentario('Metadados e título da aba. Edite o <title> para mudar o nome mostrado pelo navegador.')}
+    <meta charset="utf-8">
+    <title>${ler('tituloAba', 'Meu Projeto')}</title>
+    <link rel="stylesheet" href="estilo.css">
+</head>
 <body>
+${comentario('Cabeçalho da página. Duplique o elemento <header> para acrescentar outro cabeçalho.')}
     <header><h1>${ler('textoCabecalho', 'Meu Projeto')}</h1></header>
-    ${links ? `<nav>${links}</nav>` : ''}
+    ${links ? `${comentario('Navegação. Duplique um elemento <a> dentro de <nav> para adicionar outro link.')}<nav>${links}</nav>` : ''}
+${comentario('Conteúdo principal. Os blocos abaixo podem ser duplicados para acrescentar elementos.')}
     <main class="grade-conteudo">${componentes.conteudo}</main>
+${comentario('Botão de destaque. Duplique este link para criar outro botão e altere o texto e o href.')}
     <a class="botao-cta" href="${ler('linkBotao', '#')}">${ler('textoBotao', 'Saiba mais')}</a>
     ${componentes.rodape}
 </body>
@@ -209,8 +224,8 @@ img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
     }
 
     function atualizarSaida() {
-        buscar('codeCSS').value = gerarCss();
-        buscar('codeHTML').value = gerarHtml();
+        buscar('codeCSS').value = gerarCss(true);
+        buscar('codeHTML').value = gerarHtml(true);
         renderizarPrevia();
     }
 
@@ -239,7 +254,7 @@ img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
         const raiz = buscar('pageMaker');
         const dados = new FormData();
         dados.append('nomeArquivo', ler('nomeArquivo', 'pagina'));
-        dados.append('html', gerarHtml(true));
+        dados.append('html', buscar('codeHTML').value);
         dados.append('css', buscar('codeCSS').value);
         if (arquivoImagemSelecionado) {
             dados.append('imagem', arquivoImagemSelecionado, arquivoImagemSelecionado.name);
@@ -275,7 +290,7 @@ img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
         atualizarSaida();
         const raiz = buscar('pageMaker');
         const nomeArquivo = ler('nomeArquivo', 'pagina').replace(/[^A-Za-z0-9_-]/g, '') || 'pagina';
-        const html = gerarHtml(true);
+        const html = buscar('codeHTML').value;
         const css = buscar('codeCSS').value;
         const statusEl = buscar('pmHistoricoStatus');
 
