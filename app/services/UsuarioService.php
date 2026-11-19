@@ -4,7 +4,6 @@ namespace app\services;
 
 use app\models\Usuario;
 use app\repositories\UsuarioRepository;
-use app\helpers\Validador;
 
 class UsuarioService {
     private UsuarioRepository $repository;
@@ -68,9 +67,8 @@ class UsuarioService {
             if ($senhaNova !== $confirmarSenha) {
                 return ['sucesso' => false, 'mensagem' => 'A nova senha e a confirmação não correspondem.'];
             }
-            $erroSenha = Validador::validarSenha($senhaNova);
-            if ($erroSenha !== null) {
-                return ['sucesso' => false, 'mensagem' => 'A nova senha deve ter no mínimo 10 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.'];
+            if (strlen($senhaNova) < 10 || !preg_match('/[a-z]/', $senhaNova) || !preg_match('/[A-Z]/', $senhaNova) || !preg_match('/[0-9]/', $senhaNova) || !preg_match('/[^a-zA-Z0-9]/', $senhaNova)) {
+                return ['sucesso' => false, 'mensagem' => 'A nova senha deve ter ao menos 10 caracteres, incluindo maiúscula, minúscula, número e símbolo.'];
             }
             $senhaParaSalvar = $senhaNova;
         }
@@ -109,11 +107,6 @@ class UsuarioService {
             return false;
         }
 
-        // Validação obrigatória e consistente de senha global
-        if (Validador::validarSenha($senha) !== null) {
-            return false;
-        }
-
         if ($this->repository->emailExiste($email)) {
             return false;
         }
@@ -130,20 +123,8 @@ class UsuarioService {
             return false;
         }
 
-        if (isset($dados['tipo_perfil'])) {
-            $tipo = strtolower(trim((string)$dados['tipo_perfil']));
-            if ($tipo === 'administrador' || $tipo === 'admin') {
-                $dados['tipo_perfil'] = 'admin';
-            } elseif ($tipo === 'normal' || $tipo === 'usuario') {
-                $dados['tipo_perfil'] = 'usuario';
-            }
-        }
-
-        // Se uma nova senha foi informada na atualização, deve validar
-        if (!empty($dados['senha'])) {
-            if (Validador::validarSenha((string)$dados['senha']) !== null) {
-                return false;
-            }
+        if (isset($dados['tipo_perfil']) && strtolower(trim((string)$dados['tipo_perfil'])) === 'administrador') {
+            $dados['tipo_perfil'] = 'admin';
         }
 
         return $this->repository->updateUsuario($id, $dados);

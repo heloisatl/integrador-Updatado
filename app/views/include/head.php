@@ -24,7 +24,7 @@
     <style>
         * {
 
-            
+            /* Para navegadores baseados no Chromium (Chrome, Edge) */
             ::-webkit-scrollbar {
                 width: 5px;
                 /* Largura da barra vertical */
@@ -60,9 +60,9 @@
         }
 
         :root {
-            --bg: #e3edf3;
-            --surface: #c7d5dd;
-            --panel: #fbfdff;
+            --bg: #ffffff;
+            --surface: #f5f5f5;
+            --panel: #ffffff;
             --border: #e0e0e0;
             --accent: #5b6af0;
             --accent-h: #4a59df;
@@ -722,14 +722,6 @@ if (strpos($requestPath, '/perfil') !== false) {
     $bodyId = 'usuarios';
 } elseif (strpos($requestPath, '/logs') !== false) {
     $bodyId = 'logs';
-} elseif (strpos($requestPath, 'mvc-creator') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'mvc-creator') !== false) {
-    $bodyId = 'mvc-creator';
-} elseif (strpos($requestPath, 'pagemaker') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'pagemaker') !== false) {
-    $bodyId = 'pagemaker';
-} elseif (strpos($requestPath, 'phpmeuamigo') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'phpmeuamigo') !== false) {
-    $bodyId = 'phpmeuamigo';
-} elseif (strpos($requestPath, 'historico') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'historico') !== false) {
-    $bodyId = 'historico';
 } elseif ($bodyId === 'explorar') {
     $bodyId = 'guia';
 } elseif ($bodyId === '' || $bodyId === 'index.php') {

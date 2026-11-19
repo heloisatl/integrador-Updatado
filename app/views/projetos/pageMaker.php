@@ -5,17 +5,16 @@ include_once(__DIR__ . "/../include/navigation.php");
 
 <link rel="stylesheet" href="<?= URL_BASE_CSS ?>/pagina-pm.css">
 <script src="<?= URL_BASE ?>/assets/js/funcoes-pm.js?v=<?= filemtime(__DIR__ . '/../../../public/assets/js/funcoes-pm.js') ?>" defer></script>
-<div class="pm-etapa-wrapper" id="pageMaker" data-url-base="<?= htmlspecialchars(URL_BASE, ENT_QUOTES, 'UTF-8') ?>">
+<div class="pm-etapa-wrapper" id="pageMaker" data-url-base="<?= htmlspecialchars(URL_BASE, ENT_QUOTES, 'UTF-8') ?>" data-integracao-mvc="<?= !empty($integracaoMvc) ? '1' : '0' ?>">
         <header class="page-header pm-page-header">
             <div>
                 <h1 class="page-title">
                     <i class="bi bi-file-earmark-code"></i> PageMaker
                 </h1>
-                <p class="page-paragraph">Estilize a página conforme suas necessidades e visualize a prévia depois que terminar</p>
             </div>
         </header>
 
-        <div class="pm-etapa" id="secao-cabecalho">
+        <div class="pm-etapa">
             <h3>Arquivo e cabeçalho</h3>
             <div class="pm-grade-formulario">
                 <div class="pm-campo">
@@ -59,7 +58,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </div>
 
-        <div class="pm-cartao" id="secao-layout">
+        <div class="pm-cartao">
             <h3>Layout e espaçamento</h3>
             <div class="pm-grade-formulario">
                 <div class="pm-campo">
@@ -101,7 +100,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </div>
 
-        <div class="pm-cartao" id="secao-design">
+        <div class="pm-cartao">
             <h3>Design avançado</h3>
             <div class="pm-grade-formulario">
                 <div class="pm-campo pm-campo-completo">
@@ -152,7 +151,7 @@ include_once(__DIR__ . "/../include/navigation.php");
         </div>
 
 
-        <div class="pm-cartao" id="secao-navegacao">
+        <div class="pm-cartao">
             <h3>Links de navegação</h3>
             <label class="pm-formulario-opcoes"><input type="checkbox" id="semNavegacao"> Página sem navegação</label>
             <div class="pm-grade-formulario pm-links-list">
@@ -175,7 +174,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </div>
 
-        <div class="pm-cartao" id="secao-conteudo">
+        <div class="pm-cartao">
             <h3>Conteúdo principal</h3>
             <div class="pm-grade-formulario pm-image-controls">
                 <div class="pm-campo pm-campo-completo">
@@ -211,7 +210,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </div>
 
-        <div class="pm-cartao" id="secao-elementos">
+        <div class="pm-cartao">
             <h3>Elementos extras</h3>
             <label class="pm-formulario-opcoes"><input type="checkbox" id="incluirLista"> Incluir lista de itens (ul)</label>
             <label class="pm-formulario-opcoes"><input type="checkbox" id="incluirTabela"> Incluir tabela HTML simples</label>
@@ -220,7 +219,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             <label class="pm-formulario-opcoes"><input type="checkbox" id="incluirFormulario"> Incluir formulário de contato</label>
         </div>
 
-        <div class="pm-cartao" id="secao-botao">
+        <div class="pm-cartao">
             <h3>Botão de destaque</h3>
             <div class="pm-grade-formulario">
                 <div class="pm-campo">
@@ -229,7 +228,7 @@ include_once(__DIR__ . "/../include/navigation.php");
                 </div>
                 <div class="pm-campo">
                     <label>LINK DO BOTÃO</label>
-                    <input type="url" id="linkBotao" value="">
+                    <input type="url" id="linkBotao" value="https://exemplo.com">
                 </div>
                 <div class="pm-campo">
                     <label>COR DO BOTÃO</label>
@@ -242,7 +241,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </div>
 
-        <div class="pm-cartao" id="secao-previa">
+        <div class="pm-cartao">
             <h3>Prévia e Exportar</h3>
             <label>ORDEM DOS ELEMENTOS</label>
             <select id="ordemElementos">
@@ -256,6 +255,9 @@ include_once(__DIR__ . "/../include/navigation.php");
                 <button type="button" class="pm-botao" data-largura="320px">Celular (320 px)</button>
             </div>
             <button type="button" class="pm-botao" id="visualizarPrevia">Visualizar prévia</button>
+            <?php if (!empty($integracaoMvc)): ?>
+                <button type="button" class="pm-botao" id="usarNoMvcCreator"><i class="bi bi-arrow-return-left"></i> Usar no MVC Creator</button>
+            <?php endif; ?>
             <button type="button" class="pm-botao" id="salvarHistorico" style="background: var(--accent); color: #ffffff;"><i class="bi bi-bookmark-check"></i> Salvar no Histórico</button>
             <button type="button" class="pm-botao pm-botao-secundario" id="baixarZip"><i class="bi bi-download"></i> Baixar ZIP (HTML + CSS)</button>
             <p id="pmHistoricoStatus" class="pm-status-historico" role="status" aria-live="polite"></p>

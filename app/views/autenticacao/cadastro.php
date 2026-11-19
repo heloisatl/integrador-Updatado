@@ -193,26 +193,25 @@
             <div class="alert"><?= htmlspecialchars($erro) ?></div>
         <?php endif; ?>
 
-        <form method="POST" action="<?= URL_BASE ?>/cadastro/salvar" novalidate>
+        <form method="POST" action="<?= URL_BASE ?>/cadastro/salvar">
             <div class="form-group">
                 <label for="nome">Nome</label>
-                <input type="text" id="nome" name="nome" value="<?= htmlspecialchars($nome ?? '') ?>">
+                <input type="text" id="nome" name="nome" required>
             </div>
 
             <div class="form-group">
                 <label for="email">E-mail</label>
-                <input type="email" id="email" name="email" value="<?= htmlspecialchars($email ?? '') ?>">
+                <input type="email" id="email" name="email" required>
             </div>
 
             <div class="form-group">
                 <label for="senha">Senha</label>
                 <div class="password-wrapper">
-                    <input type="password" id="senha" name="senha" value="<?= htmlspecialchars($senha ?? '') ?>">
+                    <input type="password" id="senha" name="senha" required>
                     <button type="button" id="toggleSenha" class="btn-toggle-password" title="Mostrar/ocultar senha">
                         <i class="bi bi-eye" id="iconeOlho"></i>
                     </button>
                 </div>
-                <small style="color: #94a3b8; font-size: 11.5px; margin-top: 6px; display: block; line-height: 1.4;"><i class="bi bi-shield-lock"></i> Mínimo de 10 caracteres, contendo maiúsculas, minúsculas, números e caracteres especiais.</small>
             </div>
 
             <button type="submit" class="btn">Cadastre-se</button>

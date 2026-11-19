@@ -9,7 +9,7 @@ use app\services\SqlImporterService;
 use app\services\SqlExporterService;
 use app\services\LogService;
 use app\database\ConnectionFactory;
-use app\helpers\SchemaInspector;
+use app\tools\SchemaInspector;
 
 class PhpMeuAmigoController extends Controller{
     private BancoService $bancoService;

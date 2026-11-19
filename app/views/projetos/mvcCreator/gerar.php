@@ -12,9 +12,19 @@
         </div>
     <?php endif; ?>
 
+    <?php if (!empty($pagemakerIntegrado)): ?>
+        <div class="mvc-aviso-info" role="status">
+            <i class="bi bi-check-circle" aria-hidden="true"></i>
+            <span>Layout do PageMaker conectado. Os arquivos HTML e CSS serão incluídos no projeto gerado.</span>
+        </div>
+    <?php endif; ?>
+
     <p class="mvc-subtitulo">Clique no botão abaixo para gerar o código MVC e baixar o arquivo .ZIP completo:</p>
 
     <div class="mvc-acoes" style="flex-wrap: wrap;">
+        <a href="<?= URL_BASE ?>/projetos/pagemaker?integracao=mvc" id="btn-personalizar-views" class="mvc-etapa-botao mvc-etapa-botao-secundario" onclick="sessionStorage.setItem('mvc_pageMakerIntegracao', '1');">
+            Personalizar Views no PageMaker
+        </a>
         <button type="button" id="btn-gerar-final" onclick="executarGeracaoMvc();" class="mvc-etapa-botao" style="font-size: 16px; padding: 12px 24px;">
             <?= $isVisitante ? 'Baixar Projeto (.ZIP)' : 'Gerar Todo o Sistema (.ZIP)' ?>
         </button>
@@ -22,9 +32,9 @@
             Visualizar Estrutura
         </a>
         <?php if (!$isVisitante): ?>
-            <button type="button" id="btn-salvar-historico-mvc" onclick="salvarMvcNoHistorico();" class="mvc-etapa-botao mvc-etapa-botao-secundario">
-                <i class="bi bi-bookmark-check"></i> Salvar no Histórico
-            </button>
+            <a href="<?= URL_BASE ?>/projetos/historico" id="link-salvar-historico" class="mvc-etapa-botao mvc-etapa-botao-secundario">
+                Salvar no Histórico
+            </a>
         <?php endif; ?>
     </div>
 

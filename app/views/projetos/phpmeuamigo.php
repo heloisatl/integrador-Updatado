@@ -9,6 +9,7 @@ $hostPadrao = $isLoopback ? 'localhost' : $clientIp;
 
     <!-- Estilos de formulários globais e do PHPmeuamigo -->
     <link rel="stylesheet" href="<?= URL_BASE ?>/assets/css/form-styles.css">
+    <link rel="stylesheet" href="<?= URL_BASE ?>/assets/css/pagina-mvc.css">
     <link rel="stylesheet" href="<?= URL_BASE ?>/assets/css/phpmeuamigo.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
 

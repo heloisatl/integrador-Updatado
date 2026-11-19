@@ -13,18 +13,6 @@
     </div>
 </div>
 
-<?php if (!empty($erro)): ?>
-    <div class="alert alert-danger" style="margin-bottom: 24px;">
-        <div class="alert-icon">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-        </div>
-        <div class="alert-body">
-            <strong>Atenção</strong>
-            <div><?= htmlspecialchars($erro) ?></div>
-        </div>
-    </div>
-<?php endif; ?>
-
 <?php if (empty($usuario)): ?>
     <div class="alert alert-danger" style="margin-bottom: 24px;">
         <div class="alert-icon">
@@ -40,7 +28,7 @@
     </a>
 <?php else: ?>
     <div class="form-container">
-        <form method="POST" action="<?= URL_BASE ?>/usuarios/atualizar" novalidate>
+        <form method="POST" action="<?= URL_BASE ?>/usuarios/atualizar">
             <input type="hidden" name="id" value="<?= htmlspecialchars($usuario['id_usuario']) ?>">
 
             <!-- Seção 1: Credenciais e Dados de Acesso -->
@@ -54,28 +42,29 @@
 
             <div class="form-grid-2">
                 <div class="form-group">
-                    <label for="nome">Nome Completo</label>
-                    <input type="text" id="nome" name="nome" placeholder="Digite o nome completo" value="<?= htmlspecialchars($usuario['nome']) ?>">
+                    <label for="nome">Nome Completo *</label>
+                    <input type="text" id="nome" name="nome" placeholder="Digite o nome completo" value="<?= htmlspecialchars($usuario['nome']) ?>" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="seu@email.com" value="<?= htmlspecialchars($usuario['email']) ?>">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" placeholder="seu@email.com" value="<?= htmlspecialchars($usuario['email']) ?>" required>
                 </div>
 
                 <div class="form-group">
                     <label for="senha">
                         Senha 
-                        <span class="form-help-inline">(deixe em branco para manter a atual; mínimo 10 caracteres se alterar)</span>
+                        <span class="form-help-inline">(deixe em branco para manter a atual)</span>
                     </label>
                     <input type="password" id="senha" name="senha" placeholder="Digite uma nova senha se desejar alterar">
                 </div>
 
                 <div class="form-group">
-                    <label for="tipo_perfil">Tipo de Perfil</label>
-                    <select id="tipo_perfil" name="tipo_perfil">
-                        <option value="admin" <?= (in_array(strtolower($usuario['tipo_perfil'] ?? ''), ['admin', 'administrador'], true)) ? 'selected' : '' ?>>Administrador</option>
-                        <option value="normal" <?= (in_array(strtolower($usuario['tipo_perfil'] ?? ''), ['normal', 'usuario'], true)) ? 'selected' : '' ?>>Normal</option>
+                    <label for="tipo_perfil">Tipo de Perfil *</label>
+                    <select id="tipo_perfil" name="tipo_perfil" required>
+                        <option value="">Selecione um perfil</option>
+                        <option value="admin" <?= ($usuario['tipo_perfil'] === 'admin') ? 'selected' : '' ?>>Administrador</option>
+                        <option value="usuario" <?= ($usuario['tipo_perfil'] === 'usuario') ? 'selected' : '' ?>>Usuário</option>
                     </select>
                 </div>
             </div>

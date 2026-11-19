@@ -11,10 +11,10 @@ use app\services\BancoService;
 use app\services\TabelaService;
 use app\services\AtributoService;
 
-use app\helpers\SchemaInspector;
-use app\helpers\gerador\FiltroTabelas;
-use app\helpers\gerador\MotorGeracao;
-use app\helpers\gerador\OpcoesGeracao;
+use app\tools\SchemaInspector;
+use app\tools\gerador\FiltroTabelas;
+use app\tools\gerador\MotorGeracao;
+use app\tools\gerador\OpcoesGeracao;
 use app\services\UsuarioService;
 
 class ProjetoController extends Controller{
@@ -48,7 +48,7 @@ class ProjetoController extends Controller{
     
     //Captura as credenciais de conexão MySQL local (enviadas via POST ou constantes padrão do ambiente).
      
-    private function obterCredenciaisRequest(): array {
+    private function obterCredenciaisLocaisRequest(): array {
         $userPadrao = defined('DB_USER') ? DB_USER : 'root';
         $passPadrao = defined('DB_PASS') ? DB_PASS : '';
         $hostRaw = trim((string) ($_POST['servidor'] ?? $_POST['host'] ?? $_POST['mvc_servidor'] ?? ''));
@@ -77,7 +77,7 @@ class ProjetoController extends Controller{
 
         // Modo Visitante: reaproveita o leitor de bancos locais do PHPMeuAmigo (SHOW DATABASES via PDO)
         try {
-            $cred = $this->obterCredenciaisRequest();
+            $cred = $this->obterCredenciaisLocaisRequest();
             $bancos = BancoService::listarBancosMysqlLocal($cred['host'], $cred['porta'], $cred['user'], $cred['pass']);
             $options = '';
             foreach ($bancos as $nomeBanco) {
@@ -109,8 +109,8 @@ class ProjetoController extends Controller{
             }
 
             // Modo Visitante: leitura direta das tabelas do banco local em memória (sem persistência)
-            $cred = $this->obterCredenciaisRequest();
-            $inspecao = $this->inspecionarBancoLocal(
+            $cred = $this->obterCredenciaisLocaisRequest();
+            $inspecao = $this->inspecionarBancoLocalEmMemoria(
                 $banco,
                 $cred['host'],
                 $cred['porta'],
@@ -129,7 +129,7 @@ class ProjetoController extends Controller{
     //Inspeciona diretamente um banco MySQL local em memória (SHOW TABLES, SHOW COLUMNS e KEY_COLUMN_USAGE)
     //e monta instâncias temporárias de Tabela e Atributo sem tocar nas tabelas internas do DevStudio.
      
-    private function inspecionarBancoLocal(string $nomeBanco,string $host = 'localhost',string $porta = '3306',string $user = 'root',string $pass = '',bool $carregarAtributos = true,?FiltroTabelas $filtroTabelas = null): array {
+    private function inspecionarBancoLocalEmMemoria(string $nomeBanco,string $host = 'localhost',string $porta = '3306',string $user = 'root',string $pass = '',bool $carregarAtributos = true,?FiltroTabelas $filtroTabelas = null): array {
         if ($nomeBanco === '' || !preg_match('/^[a-zA-Z0-9_]+$/', $nomeBanco)) {
             throw new \InvalidArgumentException('Selecione um banco de dados local válido antes de gerar o sistema.');
         }
@@ -256,7 +256,7 @@ class ProjetoController extends Controller{
     
     //Monta o contexto de geração para usuários autenticados (lê metadados persistidos no DevStudio).
      
-    private function montarContextoAutenticado(): array {
+    private function montarContextoGeracaoAutenticado(): array {
         $banco = trim((string) ($_POST['banco'] ?? ''));
         if ($banco === '') {
             throw new \InvalidArgumentException('Selecione um banco de dados antes de gerar o sistema.');
@@ -296,22 +296,22 @@ class ProjetoController extends Controller{
             ];
         }
 
-        return $this->montarContextoVisitante();
+        return $this->montarContextoGeracaoVisitante();
     }
 
     
     //Monta o contexto de geração em memória para o Modo Visitante (RN 01 / FA01: zero persistência).
     
-    private function montarContextoVisitante(): array {
+    private function montarContextoGeracaoVisitante(): array {
         $nomeBanco = trim((string) ($_POST['banco'] ?? ''));
         if ($nomeBanco === '') {
             throw new \InvalidArgumentException('Selecione um banco de dados antes de gerar o sistema.');
         }
 
-        $cred = $this->obterCredenciaisRequest();
+        $cred = $this->obterCredenciaisLocaisRequest();
         $filtro = FiltroTabelas::fromRequest($_POST['tabelasDesativadas'] ?? null);
 
-        $inspecao = $this->inspecionarBancoLocal(
+        $inspecao = $this->inspecionarBancoLocalEmMemoria(
             $nomeBanco,
             $cred['host'],
             $cred['porta'],
@@ -349,19 +349,34 @@ class ProjetoController extends Controller{
 
     private function montarContextoGeracao(): array {
         if ($this->usuarioEstaAutenticado()) {
-            return $this->montarContextoAutenticado();
+            return $this->montarContextoGeracaoAutenticado();
         }
-        return $this->montarContextoVisitante();
+        return $this->montarContextoGeracaoVisitante();
     }
 
-    //Pré-visualização da etapa "Estrutura de Arquivos": devolve exatamente os caminhos que o
-    //MotorGeracao criaria para as tabelas e camadas selecionadas (mesma fonte usada no ZIP).
+    //Pré-visualização da etapa "Estrutura de Arquivos": lista os caminhos do gerador MVC
+    //e os arquivos adicionais da integração PageMaker que serão incluídos no ZIP.
     public function previewEstrutura(): void {
         header('Content-Type: application/json; charset=utf-8');
 
         try {
             $ctx = $this->montarContextoGeracao();
             $caminhos = (new MotorGeracao())->listarCaminhos($ctx['tabelas'], $ctx['atributos'], $ctx['opcoes'], $ctx['banco']);
+            if (!empty($_SESSION['mvc_pageMaker']['html']) && !empty($_SESSION['mvc_pageMaker']['css'])) {
+                $caminhos[] = 'app/views/pagemaker/index.php';
+                $caminhos[] = 'public/assets/css/pagemaker.css';
+                $nomeArquivo = $this->normalizarNomeArquivoPageMaker(
+                    (string) ($_SESSION['mvc_pageMaker']['nomeArquivo'] ?? 'pagina')
+                );
+                $caminhos[] = 'public/' . $nomeArquivo . '.html';
+                $nomeImagem = $_SESSION['mvc_pageMaker']['imagem']['nome'] ?? '';
+                if (is_string($nomeImagem) && $nomeImagem !== '') {
+                    $caminhos[] = 'public/assets/images/' . $nomeImagem;
+                }
+                if (in_array('app/core/Controller.php', $caminhos, true) && in_array('public/index.php', $caminhos, true)) {
+                    $caminhos[] = 'app/controllers/PageMakerController.php';
+                }
+            }
 
             echo json_encode([
                 'sucesso'   => true,
@@ -405,7 +420,7 @@ class ProjetoController extends Controller{
      
     private function gerarMvcAutenticado(string $nomeProjeto): void {
         try {
-            $ctx = $this->montarContextoAutenticado();
+            $ctx = $this->montarContextoGeracaoAutenticado();
         } catch (\InvalidArgumentException $e) {
             echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
             return;
@@ -449,8 +464,9 @@ class ProjetoController extends Controller{
 
             $motor = new MotorGeracao();
             $arquivos = $motor->gerar($ctx['tabelas'], $ctx['atributos'], $ctx['opcoes'], $pastaOutput, $ctx['banco']);
+            $arquivos = array_merge($arquivos, $this->integrarPageMakerNasViews($pastaOutput, $arquivos));
 
-            $geradorZip = new \app\helpers\gerador\GeradorZip();
+            $geradorZip = new \app\tools\gerador\GeradorZip();
             if (!$geradorZip->compactarPasta($pastaOutput, $arquivoZip)) {
                 throw new \RuntimeException('Não foi possível criar o arquivo .zip do projeto.');
             }
@@ -459,7 +475,7 @@ class ProjetoController extends Controller{
 
             $downloadUrl = URL_BASE . '/projetos/downloadZip?file=' . urlencode($nomeZip) . '&name=' . urlencode($nomeProjeto . '.zip');
             \app\services\LogService::registrar("Geração de sistema MVC Creator: " . $nomeProjeto);
-            $this->registrarHistorico($nomeProjeto, 'MVC Creator', [
+            $this->registrarProjetoNoHistorico($nomeProjeto, 'MVC Creator', [
                 'nome'        => $nomeProjeto,
                 'arquivo'     => $nomeZip,
                 'downloadUrl' => $downloadUrl,
@@ -469,6 +485,7 @@ class ProjetoController extends Controller{
                 'tipo'        => 'MVC Creator',
             ]);
 
+            unset($_SESSION['mvc_pageMaker']);
             echo json_encode([
                 'sucesso'     => true,
                 'visitante'   => false,
@@ -490,10 +507,10 @@ class ProjetoController extends Controller{
     //Compila em diretório temporário isolado (`temp/guest_{hash}`) e remove imediatamente após o download.
      
     private function gerarMvcVisitante(string $nomeProjeto): void {
-        $this->limparTemporariosExpirados();
+        $this->limparTemporariosVisitanteExpirados();
 
         try {
-            $ctx = $this->montarContextoVisitante();
+            $ctx = $this->montarContextoGeracaoVisitante();
         } catch (\Throwable $e) {
             echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
             return;
@@ -514,8 +531,9 @@ class ProjetoController extends Controller{
 
             $motor = new MotorGeracao();
             $arquivos = $motor->gerar($ctx['tabelas'], $ctx['atributos'], $ctx['opcoes'], $pastaBuild, $ctx['banco']);
+            $arquivos = array_merge($arquivos, $this->integrarPageMakerNasViews($pastaBuild, $arquivos));
 
-            $geradorZip = new \app\helpers\gerador\GeradorZip();
+            $geradorZip = new \app\tools\gerador\GeradorZip();
             if (!$geradorZip->compactarPasta($pastaBuild, $arquivoZip)) {
                 throw new \RuntimeException('Não foi possível criar o arquivo .zip temporário do projeto.');
             }
@@ -530,6 +548,7 @@ class ProjetoController extends Controller{
                 'created_at' => time(),
             ];
 
+            unset($_SESSION['mvc_pageMaker']);
             $downloadUrl = URL_BASE . '/projetos/downloadZip?file=' . urlencode($nomeZip) . '&guest=' . urlencode($guestHash);
 
             echo json_encode([
@@ -551,7 +570,7 @@ class ProjetoController extends Controller{
     /**
      * Remove pastas temporárias de visitantes expiradas (mais de 10 minutos) caso algum download tenha sido cancelado.
      */
-    private function limparTemporariosExpirados(int $ttlSegundos = 600): void {
+    private function limparTemporariosVisitanteExpirados(int $ttlSegundos = 600): void {
         $pastaTempRaiz = __DIR__ . '/../projetos/temp';
         if (!is_dir($pastaTempRaiz)) {
             return;
@@ -595,7 +614,7 @@ class ProjetoController extends Controller{
             $nomeDownload = preg_replace('/-\d+(\.zip)$/i', '$1', $nomeZip);
         }
 
-        $geradorZip = new \app\helpers\gerador\GeradorZip();
+        $geradorZip = new \app\tools\gerador\GeradorZip();
 
         // Fluxo de download temporário para visitante: entrega via HTTP e apaga imediatamente do servidor
         if ($guestHash !== '' && strlen($guestHash) === 16) {
@@ -634,7 +653,7 @@ class ProjetoController extends Controller{
         return $usuarioId;
     }
 
-    private function getUsuarioIdHistorico(): ?int {
+    private function getHistoricoUsuarioIdOpcional(): ?int {
         $usuario = $_SESSION['usuario_logado'] ?? null;
         if ($usuario && method_exists($usuario, 'getIdUsuario')) {
             $id = (int) $usuario->getIdUsuario();
@@ -650,7 +669,7 @@ class ProjetoController extends Controller{
         return __DIR__ . '/../projetos/historicos/usuario_' . $usuarioId . '.json';
     }
 
-    private function migrarHistoricoAdmin(string $caminhoHistoricoUsuario): void {
+    private function migrarHistoricoCompartilhadoAdmin(string $caminhoHistoricoUsuario): void {
         $usuario = $_SESSION['usuario_logado'] ?? null;
         $caminhoLegado = __DIR__ . '/../projetos/historico.json';
         $caminhoMigrado = __DIR__ . '/../projetos/historico_compartilhado_migrado.json';
@@ -672,7 +691,7 @@ class ProjetoController extends Controller{
             }
         }
 
-        $historicoAdmin = $this->aplicarLimiteModulos($historicoAdmin, 10);
+        $historicoAdmin = $this->aplicarLimiteIndependentePorModulo($historicoAdmin, 10);
         $this->salvarJsonArrayValido($caminhoHistoricoUsuario, $historicoAdmin);
 
         if (!@rename($caminhoLegado, $caminhoMigrado)) {
@@ -721,7 +740,7 @@ class ProjetoController extends Controller{
             }
         }
 
-        $usuarioIdItem = isset($item['usuario_id']) ? (int) $item['usuario_id'] : ($fallbackUsuarioId ?? ($this->getUsuarioIdHistorico() ?? 0));
+        $usuarioIdItem = isset($item['usuario_id']) ? (int) $item['usuario_id'] : ($fallbackUsuarioId ?? ($this->getHistoricoUsuarioIdOpcional() ?? 0));
 
         return [
             'id' => $id,
@@ -753,7 +772,7 @@ class ProjetoController extends Controller{
             if (preg_match('/usuario_(\d+)\.json$/', $caminho, $m)) {
                 $usuarioId = (int) $m[1];
             } else {
-                $usuarioId = $this->getUsuarioIdHistorico();
+                $usuarioId = $this->getHistoricoUsuarioIdOpcional();
             }
         }
 
@@ -790,7 +809,7 @@ class ProjetoController extends Controller{
             if (preg_match('/usuario_(\d+)\.json$/', $caminho, $m)) {
                 $usuarioId = (int) $m[1];
             } else {
-                $usuarioId = $this->getUsuarioIdHistorico();
+                $usuarioId = $this->getHistoricoUsuarioIdOpcional();
             }
         }
 
@@ -820,7 +839,7 @@ class ProjetoController extends Controller{
         return $itens;
     }
 
-    private function aplicarLimiteModulos(array $historico, int $limite = 10): array {
+    private function aplicarLimiteIndependentePorModulo(array $historico, int $limite = 10): array {
         $mvc = [];
         $pm = [];
         $outros = [];
@@ -842,7 +861,7 @@ class ProjetoController extends Controller{
             $excedentesMvc = array_slice($mvc, $limite);
             $mvc = array_slice($mvc, 0, $limite);
             foreach ($excedentesMvc as $itemExcedente) {
-                $this->expurgarProjeto($itemExcedente);
+                $this->expurgarArquivosEDadosProjeto($itemExcedente);
             }
         }
 
@@ -851,7 +870,7 @@ class ProjetoController extends Controller{
             $excedentesPm = array_slice($pm, $limite);
             $pm = array_slice($pm, 0, $limite);
             foreach ($excedentesPm as $itemExcedentePm) {
-                $this->expurgarProjeto($itemExcedentePm);
+                $this->expurgarArquivosEDadosProjeto($itemExcedentePm);
             }
         }
 
@@ -859,10 +878,10 @@ class ProjetoController extends Controller{
         return $this->ordenarPorData($resultado);
     }
 
-    private function expurgarProjeto(array $item): void {
+    private function expurgarArquivosEDadosProjeto(array $item): void {
         $nomeProjeto = trim((string)($item['nome'] ?? ''));
         $modulo = trim((string)($item['modulo'] ?? ''));
-        $usuarioId = (int)($item['usuario_id'] ?? ($this->getUsuarioIdHistorico() ?? 0));
+        $usuarioId = (int)($item['usuario_id'] ?? ($this->getHistoricoUsuarioIdOpcional() ?? 0));
         $payload = is_array($item['conteudo'] ?? null) ? $item['conteudo'] : [];
 
         // 1. Apaga arquivo ZIP físico se existir em diretórios de download
@@ -903,20 +922,20 @@ class ProjetoController extends Controller{
         }
     }
 
-    private function sincronizarHistorico(): array {
+    private function sincronizarHistoricoEArquivos(): array {
         $caminhoHistoricoUsuario = $this->getHistoricoStoragePath();
-        $this->migrarHistoricoAdmin($caminhoHistoricoUsuario);
+        $this->migrarHistoricoCompartilhadoAdmin($caminhoHistoricoUsuario);
         $historico = $this->lerJsonArrayValido($caminhoHistoricoUsuario);
 
         // 1. Remove automaticamente projetos com mais de 60 dias de armazenamento
-        $historico = $this->removerPorIdade($historico, 60);
+        $historico = $this->aplicarRemocaoAutomaticaPorIdade($historico, 60);
 
         // 2. Mantém os limites independentes por módulo (até 10 por módulo)
-        $historico = $this->aplicarLimiteModulos($historico, 10);
+        $historico = $this->aplicarLimiteIndependentePorModulo($historico, 10);
         $this->salvarJsonArrayValido($caminhoHistoricoUsuario, $historico);
 
         // 3. Executa a limpeza global de projetos expirados no banco e arquivos físicos
-        $this->limparExpiradosSistema(60);
+        $this->limparProjetosExpiradosSistema(60);
 
         return $historico;
     }
@@ -925,7 +944,7 @@ class ProjetoController extends Controller{
      * Remove automaticamente do histórico itens com mais de 60 dias de existência,
      * expurgando arquivos físicos e registros associados para liberar armazenamento.
      */
-    private function removerPorIdade(array $historico, int $dias = 60): array {
+    private function aplicarRemocaoAutomaticaPorIdade(array $historico, int $dias = 60): array {
         $resultado = [];
         $agora = time();
         $limiteSegundos = $dias * 86400;
@@ -937,7 +956,7 @@ class ProjetoController extends Controller{
             if ($criadoEm) {
                 $tempoCriacao = strtotime($criadoEm);
                 if ($tempoCriacao > 0 && ($agora - $tempoCriacao) >= $limiteSegundos) {
-                    $this->expurgarProjeto($norm);
+                    $this->expurgarArquivosEDadosProjeto($norm);
                     \app\services\LogService::registrar("Remoção automática de projeto expirado (> 60 dias): " . ($norm['nome'] ?? 'Projeto'));
                     continue;
                 }
@@ -953,7 +972,7 @@ class ProjetoController extends Controller{
      * Varre todo o sistema (banco de dados, arquivos JSON de todos os usuários e pasta de downloads)
      * removendo qualquer projeto armazenado há mais de 60 dias para evitar sobrecarga no servidor.
      */
-    public function limparExpiradosSistema(int $dias = 60): int {
+    public function limparProjetosExpiradosSistema(int $dias = 60): int {
         $totalRemovidos = 0;
 
         // 1. Limpeza no banco de dados (tabela projeto e estilos associados)
@@ -976,7 +995,7 @@ class ProjetoController extends Controller{
             foreach ($arquivosJson as $caminhoJson) {
                 $itens = $this->lerJsonArrayValido($caminhoJson);
                 $totalAntes = count($itens);
-                $itensLimpos = $this->removerPorIdade($itens, $dias);
+                $itensLimpos = $this->aplicarRemocaoAutomaticaPorIdade($itens, $dias);
                 if (count($itensLimpos) !== $totalAntes) {
                     $totalRemovidos += ($totalAntes - count($itensLimpos));
                     $this->salvarJsonArrayValido($caminhoJson, $itensLimpos);
@@ -1004,15 +1023,8 @@ class ProjetoController extends Controller{
         return $totalRemovidos;
     }
 
-    /**
-     * Alias de compatibilidade para nome antigo de função.
-     */
-    public function limparProjetosExpiradosSistema(int $dias = 60): int {
-        return $this->limparExpiradosSistema($dias);
-    }
-
     private function obterItemPorId(string $id): ?array {
-        foreach ($this->sincronizarHistorico() as $item) {
+        foreach ($this->sincronizarHistoricoEArquivos() as $item) {
             if (($item['id'] ?? null) === $id) {
                 return $item;
             }
@@ -1032,7 +1044,7 @@ class ProjetoController extends Controller{
         return null;
     }
 
-    private function registrarHistorico(string $nome, string $modulo, array $conteudo = []): array {
+    private function registrarProjetoNoHistorico(string $nome, string $modulo, array $conteudo = []): array {
         $nome = trim((string) $nome);
         $modulo = trim((string) $modulo);
 
@@ -1044,7 +1056,7 @@ class ProjetoController extends Controller{
             return ['sucesso' => false, 'mensagem' => 'Módulo inválido para o histórico.'];
         }
 
-        $historico = $this->sincronizarHistorico();
+        $historico = $this->sincronizarHistoricoEArquivos();
 
         $novoItem = [
             'id' => 'proj_' . substr(hash('sha256', uniqid((string) microtime(true), true)), 0, 12),
@@ -1055,14 +1067,14 @@ class ProjetoController extends Controller{
             'conteudo' => $conteudo,
         ];
         $historico[] = $novoItem;
-        $historico = $this->aplicarLimiteModulos($historico, 10);
+        $historico = $this->aplicarLimiteIndependentePorModulo($historico, 10);
         $this->salvarJsonArrayValido($this->getHistoricoStoragePath(), $historico);
 
         \app\services\LogService::registrar("Projeto salvo no histórico (" . $modulo . "): " . $nome);
         return ['sucesso' => true, 'item' => $novoItem];
     }
 
-    public function registrarHistoricoJson(): void {
+    public function registrarProjetoHistoricoJson(): void {
         $this->autenticacaoJsonRequired();
 
         $dados = json_decode(file_get_contents('php://input'), true);
@@ -1079,24 +1091,13 @@ class ProjetoController extends Controller{
         }
 
         header('Content-Type: application/json');
-        echo json_encode($this->registrarHistorico($nome, $modulo, $conteudo));
+        echo json_encode($this->registrarProjetoNoHistorico($nome, $modulo, $conteudo));
         exit();
-    }
-
-    /**
-     * Alias de compatibilidade retroativa.
-     */
-    public function registrarProjetoHistoricoJson(): void {
-        $this->registrarHistoricoJson();
-    }
-
-    private function registrarProjetoNoHistorico(string $nome, string $modulo, array $conteudo = []): array {
-        return $this->registrarHistorico($nome, $modulo, $conteudo);
     }
 
     public function listarHistoricoJson(): void {
         $this->autenticacaoJsonRequired();
-        $historico = $this->sincronizarHistorico();
+        $historico = $this->sincronizarHistoricoEArquivos();
 
         header('Content-Type: application/json');
         echo json_encode([
@@ -1157,7 +1158,7 @@ class ProjetoController extends Controller{
                 }
                 $zip->close();
 
-                $geradorZip = new \app\helpers\gerador\GeradorZip();
+                $geradorZip = new \app\tools\gerador\GeradorZip();
                 $geradorZip->enviarDownload($arquivoZip, $nomeBase . '.zip', true, $tempDir);
                 exit();
             }
@@ -1192,11 +1193,11 @@ class ProjetoController extends Controller{
 
         // Se o arquivo .zip físico não existir no servidor, reconstrói o pacote do projeto
         if ($caminhoZip === null || !file_exists($caminhoZip)) {
-            $caminhoZip = $this->reconstruirZipHistorico($item, $arquivoOriginal, $nomeProjetoLimpo);
+            $caminhoZip = $this->reconstruirZipProjetoHistorico($item, $arquivoOriginal, $nomeProjetoLimpo);
         }
 
         if ($caminhoZip !== null && file_exists($caminhoZip)) {
-            $geradorZip = new \app\helpers\gerador\GeradorZip();
+            $geradorZip = new \app\tools\gerador\GeradorZip();
             $geradorZip->enviarDownload($caminhoZip, $nomeDownloadZip, false);
             exit();
         }
@@ -1241,7 +1242,7 @@ class ProjetoController extends Controller{
         return null;
     }
 
-    private function reconstruirZipHistorico(array $item, string $arquivoOriginal, string $nomeProjetoLimpo): ?string {
+    private function reconstruirZipProjetoHistorico(array $item, string $arquivoOriginal, string $nomeProjetoLimpo): ?string {
         $pastaDownloads = __DIR__ . '/../projetos/downloads';
         if (!is_dir($pastaDownloads)) {
             @mkdir($pastaDownloads, 0755, true);
@@ -1286,14 +1287,24 @@ class ProjetoController extends Controller{
                             foreach ($cols as $col) {
                                 $tipo = preg_replace('/\(.*/', '', $col['Type']);
                                 $isPk = (strtoupper($col['Key'] ?? '') === 'PRI');
-                                $attrs[] = new \app\models\Atributo($attrId++, $tabelaId, $col['Field'], $tipo, $isPk);
+                                $attrs[] = new \app\models\Atributo(
+                                    $attrId++,
+                                    $tabelaId,
+                                    null,
+                                    $col['Field'],
+                                    $tipo,
+                                    $isPk,
+                                    strtoupper($col['Null'] ?? 'YES') === 'NO',
+                                    stripos($col['Extra'] ?? '', 'auto_increment') !== false,
+                                    strtoupper($col['Key'] ?? '') === 'UNI'
+                                );
                             }
                             $atributosPorTabela[$tabelaId] = $attrs;
                             $tabelaId++;
                         }
-                        $opcoes = new \app\helpers\gerador\OpcoesGeracao(true, true, true, true, true, false, true, true);
+                        $opcoes = new \app\tools\gerador\OpcoesGeracao([], false, true);
                         $bancoData = ['nome_banco' => $bancoNome, 'id_banco' => $payload['banco_id'] ?? null];
-                        $motor = new \app\helpers\gerador\MotorGeracao();
+                        $motor = new \app\tools\gerador\MotorGeracao();
                         $motor->gerar($tabelasObjs, $atributosPorTabela, $opcoes, $pastaBuild, $bancoData);
                         $gerouComMotor = true;
                     }
@@ -1321,13 +1332,12 @@ class ProjetoController extends Controller{
                 }
             }
 
-            file_put_contents($pastaBuild . '/app/core/Autoload.php', \app\helpers\gerador\GeradorCore::gerarAutoload());
-            file_put_contents($pastaBuild . '/app/core/Controller.php', \app\helpers\gerador\GeradorCore::gerarController());
-            file_put_contents($pastaBuild . '/app/core/Router.php', \app\helpers\gerador\GeradorCore::gerarRouter());
-            file_put_contents($pastaBuild . '/app/database/ConnectionFactory.php', \app\helpers\gerador\GeradorRepositorio::gerarConnectionFactory(false));
-            $bancoNomeAjustado = ($bancoNome ?: 'meu_banco') . '_devstudio';
-            file_put_contents($pastaBuild . '/app/config/config.php', \app\helpers\gerador\GeradorConfig::gerarConfig('localhost', '3306', $bancoNomeAjustado, 'root', false));
-            file_put_contents($pastaBuild . '/public/index.php', \app\helpers\gerador\geradorIndex::gerarIndex([], true, true, false));
+            file_put_contents($pastaBuild . '/app/core/Autoload.php', \app\tools\gerador\GeradorCore::gerarAutoload());
+            file_put_contents($pastaBuild . '/app/core/Controller.php', \app\tools\gerador\GeradorCore::gerarController());
+            file_put_contents($pastaBuild . '/app/core/Router.php', \app\tools\gerador\GeradorCore::gerarRouter());
+            file_put_contents($pastaBuild . '/app/database/ConnectionFactory.php', \app\tools\gerador\GeradorRepositorio::gerarConnectionFactory(false));
+            file_put_contents($pastaBuild . '/app/config/config.php', \app\tools\gerador\GeradorConfig::gerarConfig('localhost', '3306', $bancoNome ?: 'meu_banco', 'root', false));
+            file_put_contents($pastaBuild . '/public/index.php', \app\tools\gerador\geradorIndex::gerarIndex([], true, true, false));
 
             $nomeExibicao = (string)($item['nome'] ?? $nomeProjetoLimpo);
             $readme = "# Projeto: {$nomeExibicao}\n\n";
@@ -1355,7 +1365,7 @@ class ProjetoController extends Controller{
             }
         }
 
-        $geradorZip = new \app\helpers\gerador\GeradorZip();
+        $geradorZip = new \app\tools\gerador\GeradorZip();
         $compactou = $geradorZip->compactarPasta($pastaBuild, $arquivoZipDestino);
         $this->excluirDiretorioRecursivo($pastaTemp);
 
@@ -1374,10 +1384,10 @@ class ProjetoController extends Controller{
             $this->redirect(URL_BASE . '/projetos/historico');
         }
 
-        $historico = $this->sincronizarHistorico();
+        $historico = $this->sincronizarHistoricoEArquivos();
         $item = $this->removerItemPorId($historico, $id);
         if ($item !== null) {
-            $this->expurgarProjeto($item);
+            $this->expurgarArquivosEDadosProjeto($item);
             \app\services\LogService::registrar("Projeto removido do histórico (ID: " . $id . ")");
         }
         if ($item === null) {
@@ -1392,9 +1402,9 @@ class ProjetoController extends Controller{
     public function limparHistorico(): void {
         $this->autenticacaoRequired();
 
-        $historico = $this->sincronizarHistorico();
+        $historico = $this->sincronizarHistoricoEArquivos();
         foreach ($historico as $item) {
-            $this->expurgarProjeto($item);
+            $this->expurgarArquivosEDadosProjeto($item);
         }
         $this->salvarJsonArrayValido($this->getHistoricoStoragePath(), []);
         \app\services\LogService::registrar("Histórico de projetos foi limpo pelo usuário.");
@@ -1417,6 +1427,7 @@ class ProjetoController extends Controller{
             $this->view('projetos/mvcCreator', [
                 'bancoOpts'     => '',
                 'modoVisitante' => true,
+                'pagemakerIntegrado' => !empty($_SESSION['mvc_pageMaker']),
             ]);
             return;
         }
@@ -1444,11 +1455,230 @@ class ProjetoController extends Controller{
         $this->view('projetos/mvcCreator', [
             'bancoOpts'     => $bancoOpts,
             'modoVisitante' => false,
+            'pagemakerIntegrado' => !empty($_SESSION['mvc_pageMaker']),
         ]);
     }
 
     public function pageMaker(): void {
-        $this->view('projetos/pageMaker');
+        $this->view('projetos/pageMaker', [
+            'integracaoMvc' => ($_GET['integracao'] ?? '') === 'mvc',
+        ]);
+    }
+
+    private function normalizarNomeArquivoPageMaker(string $nomeArquivo): string {
+        $nomeBase = pathinfo(trim($nomeArquivo), PATHINFO_FILENAME);
+        return preg_replace('/[^A-Za-z0-9_-]/', '', $nomeBase) ?: 'pagina';
+    }
+
+    public function salvarPageMakerParaMvc(): void {
+        $html = $_POST['html'] ?? null;
+        $css = $_POST['css'] ?? null;
+
+        if (!is_string($html) || !is_string($css) || $html === '' || $css === '') {
+            http_response_code(400);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Gere a prévia antes de conectar o layout ao MVC Creator.']);
+            return;
+        }
+
+        if (strlen($html) + strlen($css) > 2 * 1024 * 1024) {
+            http_response_code(400);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['sucesso' => false, 'mensagem' => 'O layout gerado excede o limite permitido para integração.']);
+            return;
+        }
+
+        $imagemPageMaker = null;
+        $upload = $_FILES['imagem'] ?? null;
+        if (is_array($upload) && ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            if (($upload['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+                http_response_code(400);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['sucesso' => false, 'mensagem' => 'Não foi possível receber a imagem enviada.']);
+                return;
+            }
+            if ((int) ($upload['size'] ?? 0) > 10 * 1024 * 1024) {
+                http_response_code(400);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['sucesso' => false, 'mensagem' => 'A imagem deve ter no máximo 10 MB.']);
+                return;
+            }
+
+            $extensoesMime = [
+                'image/jpeg' => 'jpg',
+                'image/png'  => 'png',
+                'image/gif'  => 'gif',
+                'image/webp' => 'webp',
+            ];
+            $mime = (new \finfo(FILEINFO_MIME_TYPE))->file((string) $upload['tmp_name']);
+            if (!isset($extensoesMime[$mime])) {
+                http_response_code(400);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['sucesso' => false, 'mensagem' => 'A imagem deve ser JPG, PNG, GIF ou WebP.']);
+                return;
+            }
+            $conteudoImagem = file_get_contents((string) $upload['tmp_name']);
+            if (!is_string($conteudoImagem)) {
+                http_response_code(400);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['sucesso' => false, 'mensagem' => 'Não foi possível ler a imagem enviada.']);
+                return;
+            }
+            $nomeImagem = pathinfo(basename((string) ($_POST['nomeImagemArquivo'] ?? 'imagem')), PATHINFO_FILENAME);
+            $nomeImagem = preg_replace('/[^A-Za-z0-9_-]/', '', $nomeImagem) ?: 'imagem';
+            $imagemPageMaker = [
+                'nome'     => $nomeImagem . '.' . $extensoesMime[$mime],
+                'conteudo' => $conteudoImagem,
+            ];
+        }
+
+        $_SESSION['mvc_pageMaker'] = [
+            'html'        => $html,
+            'css'         => $css,
+            'nomeArquivo' => $this->normalizarNomeArquivoPageMaker(
+                (string) ($_POST['nomeArquivo'] ?? 'pagina')
+            ),
+            'imagem' => $imagemPageMaker,
+        ];
+
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'sucesso' => true,
+            'redirectUrl' => URL_BASE . '/projetos/mvc-creator?step=gerar&pagemaker=1',
+        ]);
+    }
+
+    private function integrarPageMakerNasViews(string $pastaProjeto, array $arquivos): array {
+        $layout = $_SESSION['mvc_pageMaker'] ?? null;
+        if (!is_array($layout) || !is_string($layout['html'] ?? null) || !is_string($layout['css'] ?? null)) {
+            return [];
+        }
+
+        $arquivosIntegrados = [];
+        $caminhoCss = $pastaProjeto . '/public/assets/css/pagemaker.css';
+        $pastaCss = dirname($caminhoCss);
+        if (!is_dir($pastaCss) && !mkdir($pastaCss, 0755, true) && !is_dir($pastaCss)) {
+            throw new \RuntimeException('Não foi possível criar a pasta de estilos do PageMaker.');
+        }
+        if (file_put_contents($caminhoCss, $layout['css'], LOCK_EX) === false) {
+            throw new \RuntimeException('Não foi possível gravar o CSS gerado pelo PageMaker.');
+        }
+        $arquivosIntegrados[] = 'public/assets/css/pagemaker.css';
+        $nomeArquivo = $this->normalizarNomeArquivoPageMaker(
+            (string) ($layout['nomeArquivo'] ?? 'pagina')
+        );
+
+        $imagem = $layout['imagem'] ?? null;
+        if (is_array($imagem) && is_string($imagem['nome'] ?? null) && is_string($imagem['conteudo'] ?? null)) {
+            $nomeImagem = basename($imagem['nome']);
+            if ($nomeImagem !== $imagem['nome'] || !preg_match('/^[A-Za-z0-9_-]+\.(jpg|png|gif|webp)$/', $nomeImagem)) {
+                throw new \RuntimeException('O nome da imagem do PageMaker é inválido.');
+            }
+            $pastaImagens = $pastaProjeto . '/public/assets/images';
+            if (!is_dir($pastaImagens) && !mkdir($pastaImagens, 0755, true) && !is_dir($pastaImagens)) {
+                throw new \RuntimeException('Não foi possível criar a pasta de imagens do PageMaker.');
+            }
+            if (file_put_contents($pastaImagens . '/' . $nomeImagem, $imagem['conteudo'], LOCK_EX) === false) {
+                throw new \RuntimeException('Não foi possível gravar a imagem do PageMaker.');
+            }
+            $arquivosIntegrados[] = 'public/assets/images/' . $nomeImagem;
+        } else {
+            $nomeImagem = '';
+        }
+
+        $htmlPublico = str_replace(
+            'href="estilo.css"',
+            'href="assets/css/pagemaker.css"',
+            $layout['html']
+        );
+        if ($nomeImagem !== '') {
+            $htmlPublico = str_replace(
+                'src="' . $nomeImagem . '"',
+                'src="assets/images/' . $nomeImagem . '"',
+                $htmlPublico
+            );
+        }
+        $caminhoHtmlPublico = $pastaProjeto . '/public/' . $nomeArquivo . '.html';
+        if (file_put_contents($caminhoHtmlPublico, $htmlPublico, LOCK_EX) === false) {
+            throw new \RuntimeException('Não foi possível gravar o arquivo HTML do PageMaker.');
+        }
+        $arquivosIntegrados[] = 'public/' . $nomeArquivo . '.html';
+
+        $caminhoView = $pastaProjeto . '/app/views/pagemaker/index.php';
+        $pastaView = dirname($caminhoView);
+        if (!is_dir($pastaView) && !mkdir($pastaView, 0755, true) && !is_dir($pastaView)) {
+            throw new \RuntimeException('Não foi possível criar a pasta de Views do PageMaker.');
+        }
+        $htmlCodificado = base64_encode($layout['html']);
+        $conteudoView = "<?php\n"
+            . "\$htmlPageMaker = base64_decode('" . $htmlCodificado . "');\n"
+            . "\$htmlPageMaker = str_replace('href=\"estilo.css\"', 'href=\"' . URL_BASE . '/assets/css/pagemaker.css\"', \$htmlPageMaker);\n";
+        if ($nomeImagem !== '') {
+            $conteudoView .= "\$htmlPageMaker = str_replace('src=\"" . $nomeImagem . "\"', 'src=\"' . URL_BASE . '/assets/images/" . $nomeImagem . "\"', \$htmlPageMaker);\n";
+        }
+        $conteudoView .= "echo \$htmlPageMaker;\n";
+        if (file_put_contents($caminhoView, $conteudoView, LOCK_EX) === false) {
+            throw new \RuntimeException('Não foi possível gravar a View gerada pelo PageMaker.');
+        }
+        $arquivosIntegrados[] = 'app/views/pagemaker/index.php';
+
+        if (in_array('app/core/Controller.php', $arquivos, true) && in_array('public/index.php', $arquivos, true)) {
+            $caminhoController = $pastaProjeto . '/app/controllers/PageMakerController.php';
+            $conteudoController = <<<'PHP'
+<?php
+
+namespace app\controllers;
+
+use app\core\Controller;
+
+class PageMakerController extends Controller {
+    public function index(): void {
+        $this->view('pagemaker/index');
+    }
+}
+PHP;
+            $pastaControllers = dirname($caminhoController);
+            if (!is_dir($pastaControllers) && !mkdir($pastaControllers, 0755, true) && !is_dir($pastaControllers)) {
+                throw new \RuntimeException('Não foi possível criar a pasta de Controllers do PageMaker.');
+            }
+            if (file_put_contents($caminhoController, $conteudoController, LOCK_EX) === false) {
+                throw new \RuntimeException('Não foi possível gravar o Controller da View PageMaker.');
+            }
+            $arquivosIntegrados[] = 'app/controllers/PageMakerController.php';
+
+            $caminhoIndex = $pastaProjeto . '/public/index.php';
+            $conteudoIndex = file_get_contents($caminhoIndex);
+            if (!is_string($conteudoIndex) || !str_contains($conteudoIndex, '$router->run();')) {
+                throw new \RuntimeException('Não foi possível registrar a rota da View PageMaker.');
+            }
+            $conteudoIndex = str_replace(
+                '$router->run();',
+                "\$router->get('/pagemaker', 'PageMakerController@index');\n\$router->run();",
+                $conteudoIndex
+            );
+            if (file_put_contents($caminhoIndex, $conteudoIndex, LOCK_EX) === false) {
+                throw new \RuntimeException('Não foi possível registrar a rota da View PageMaker.');
+            }
+        }
+
+        $linkCss = "<?php echo '<link rel=\"stylesheet\" href=\"' . URL_BASE . '/assets/css/pagemaker.css\">'; ?>\n";
+        foreach ($arquivos as $arquivo) {
+            if (!str_starts_with($arquivo, 'app/views/') || !str_ends_with($arquivo, '.php')) {
+                continue;
+            }
+            $caminhoArquivo = $pastaProjeto . '/' . $arquivo;
+            $conteudo = file_get_contents($caminhoArquivo);
+            if (!is_string($conteudo)) {
+                throw new \RuntimeException("Não foi possível ler a View {$arquivo} para integrar os estilos.");
+            }
+            if (!str_contains($conteudo, '/assets/css/pagemaker.css')) {
+                if (file_put_contents($caminhoArquivo, $linkCss . $conteudo, LOCK_EX) === false) {
+                    throw new \RuntimeException("Não foi possível vincular os estilos à View {$arquivo}.");
+                }
+            }
+        }
+
+        return $arquivosIntegrados;
     }
 
     public function baixarPageMakerZip(): void {
@@ -1519,13 +1749,13 @@ class ProjetoController extends Controller{
                 }
             }
 
-            $geradorZip = new \app\helpers\gerador\GeradorZip();
+            $geradorZip = new \app\tools\gerador\GeradorZip();
             if (!$geradorZip->compactarPasta($pastaConteudo, $arquivoZip)) {
                 throw new \RuntimeException('Não foi possível criar o arquivo ZIP.');
             }
 
             // Registra a criação da página no histórico do usuário
-            $this->registrarHistorico($nome, 'PageMaker', [
+            $this->registrarProjetoNoHistorico($nome, 'PageMaker', [
                 'nome'        => $nome,
                 'arquivo'     => $nome . '.html',
                 'html'        => $html,
@@ -1540,91 +1770,6 @@ class ProjetoController extends Controller{
             $this->excluirDiretorioRecursivo($diretorioTemp);
             http_response_code($e instanceof \InvalidArgumentException ? 400 : 500);
             header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
-        }
-    }
-
-    public function salvarMvcHistorico(): void {
-        $this->autenticacaoJsonRequired();
-
-        $nomeProjeto = trim((string) ($_POST['nomeProjeto'] ?? 'meu_projeto'));
-        if ($nomeProjeto === '') {
-            $nomeProjeto = 'meu_projeto';
-        }
-        $nomeProjeto = preg_replace('/[^A-Za-z0-9_-]/', '', $nomeProjeto) ?: 'meu_projeto';
-
-        try {
-            $ctx = $this->montarContextoAutenticado();
-        } catch (\InvalidArgumentException $e) {
-            echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
-            return;
-        } catch (\Throwable $e) {
-            echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
-            return;
-        }
-
-        $idUsuario = (int) $_SESSION['usuario_logado']->getIdUsuario();
-        $idBanco = isset($ctx['banco']['id_banco']) && $ctx['banco']['id_banco'] !== null ? (int) $ctx['banco']['id_banco'] : null;
-
-        $projeto = new Projeto(
-            $idUsuario,
-            $idBanco ?? 1,
-            null,
-            $nomeProjeto,
-            date('Y-m-d H:i:s'),
-            [
-                'comentarios' => $ctx['opcoes']->comentariosAtivos() ? 1 : 0,
-                'views'       => $ctx['opcoes']->ativa('views') ? 1 : 0,
-            ],
-            null
-        );
-
-        $resultadoInsert = $this->getProjetoService()->insert($projeto);
-        if (!$resultadoInsert) {
-            echo json_encode(['sucesso' => false, 'mensagem' => 'Não foi possível salvar o projeto no banco de dados.']);
-            return;
-        }
-
-        $pastaOutput = __DIR__ . '/../projetos/temp/' . $nomeProjeto;
-        $nomeZip = $nomeProjeto . '-' . $resultadoInsert . '.zip';
-        $pastaDownloads = __DIR__ . '/../projetos/downloads/';
-        if (!is_dir($pastaDownloads)) {
-            mkdir($pastaDownloads, 0755, true);
-        }
-        $arquivoZip = $pastaDownloads . $nomeZip;
-
-        try {
-            $this->excluirDiretorioRecursivo($pastaOutput);
-
-            $motor = new \app\helpers\gerador\MotorGeracao();
-            $arquivos = $motor->gerar($ctx['tabelas'], $ctx['atributos'], $ctx['opcoes'], $pastaOutput, $ctx['banco']);
-
-            $geradorZip = new \app\helpers\gerador\GeradorZip();
-            if (!$geradorZip->compactarPasta($pastaOutput, $arquivoZip)) {
-                throw new \RuntimeException('Não foi possível criar o arquivo .zip do projeto.');
-            }
-
-            $this->excluirDiretorioRecursivo($pastaOutput);
-
-            $downloadUrl = URL_BASE . '/projetos/downloadZip?file=' . urlencode($nomeZip) . '&name=' . urlencode($nomeProjeto . '.zip');
-            \app\services\LogService::registrar("Projeto MVC Creator persistido no histórico: " . $nomeProjeto);
-            $this->registrarHistorico($nomeProjeto, 'MVC Creator', [
-                'nome'        => $nomeProjeto,
-                'arquivo'     => $nomeZip,
-                'downloadUrl' => $downloadUrl,
-                'banco'       => $ctx['banco']['nome_banco'] ?? 'banco',
-                'banco_id'    => $ctx['banco']['id_banco'] ?? 1,
-                'gerado_em'   => date('c'),
-                'tipo'        => 'MVC Creator',
-            ]);
-
-            echo json_encode([
-                'sucesso'     => true,
-                'mensagem'    => 'Projeto "' . $nomeProjeto . '" salvo no Histórico com sucesso!',
-                'redirect'    => URL_BASE . '/projetos/historico',
-            ]);
-        } catch (\Throwable $e) {
-            $this->excluirDiretorioRecursivo($pastaOutput);
             echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
         }
     }
@@ -1645,7 +1790,7 @@ class ProjetoController extends Controller{
             return;
         }
 
-        $item = $this->registrarHistorico($nome, 'PageMaker', [
+        $item = $this->registrarProjetoNoHistorico($nome, 'PageMaker', [
             'nome'        => $nome,
             'arquivo'     => $nome . '.html',
             'html'        => $html,
@@ -1666,7 +1811,7 @@ class ProjetoController extends Controller{
 
     public function historico(): void {
         $this->autenticacaoRequired();
-        $historico = $this->sincronizarHistorico();
+        $historico = $this->sincronizarHistoricoEArquivos();
         $this->view('projetos/historico', ['historico' => $historico]);
     }
 

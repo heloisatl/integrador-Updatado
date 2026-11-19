@@ -10,14 +10,6 @@ if (strpos($requestPath, '/perfil') !== false) {
     $paginaAtual = 'usuarios';
 } elseif (strpos($requestPath, '/logs') !== false) {
     $paginaAtual = 'logs';
-} elseif (strpos($requestPath, 'mvc-creator') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'mvc-creator') !== false) {
-    $paginaAtual = 'mvc-creator';
-} elseif (strpos($requestPath, 'pagemaker') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'pagemaker') !== false) {
-    $paginaAtual = 'pagemaker';
-} elseif (strpos($requestPath, 'phpmeuamigo') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'phpmeuamigo') !== false) {
-    $paginaAtual = 'phpmeuamigo';
-} elseif (strpos($requestPath, 'historico') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'historico') !== false) {
-    $paginaAtual = 'historico';
 } elseif ($paginaAtual === 'explorar') {
     $paginaAtual = 'guia';
 } elseif ($paginaAtual === '' || $paginaAtual === 'index.php') {
@@ -296,15 +288,25 @@ function verificarAtivo($slug, $paginaAtual, $queryKey = null, $queryValue = nul
         <div id="sb-titulo-PageMaker" class="sb-section">
             <div class="sb-label">Page Maker</div>
 
-            <a href="<?= URL_BASE ?>/projetos/pagemaker#secao-cabecalho" class="sb-item <?php echo ($paginaAtual === 'pagemaker' && in_array($currentSection, ['', 'cabecalho'], true)) ? 'active' : ''; ?>">Cabeçalho</a>
 
-            <a href="<?= URL_BASE ?>/projetos/pagemaker#secao-navegacao" class="sb-item <?php echo ($paginaAtual === 'pagemaker' && $currentSection === 'navegacao') ? 'active' : ''; ?>">Navegação</a>
 
-            <a href="<?= URL_BASE ?>/projetos/pagemaker#secao-conteudo" class="sb-item <?php echo ($paginaAtual === 'pagemaker' && $currentSection === 'conteudo') ? 'active' : ''; ?>">Conteúdo</a>
+            <a href="<?= URL_BASE ?>/projetos/pagemaker?section=cabecalho" class="sb-item <?php echo verificarAtivo('pagemaker', $paginaAtual, 'section', 'cabecalho'); ?>"> <span class="sb-icon"></span> Cabeçalho
+            </a>
 
-            <a href="<?= URL_BASE ?>/projetos/pagemaker#secao-elementos" class="sb-item <?php echo ($paginaAtual === 'pagemaker' && $currentSection === 'elementos') ? 'active' : ''; ?>">Elementos Extras</a>
+            <a href="<?= URL_BASE ?>/projetos/pagemaker?section=navegacao" class="sb-item <?php echo verificarAtivo('pagemaker', $paginaAtual, 'section', 'navegacao'); ?>"> <span class="sb-icon"></span> Navegação
+            </a>
 
-            <a href="<?= URL_BASE ?>/projetos/pagemaker#secao-previa" class="sb-item <?php echo ($paginaAtual === 'pagemaker' && in_array($currentSection, ['previa', 'previsa'], true)) ? 'active' : ''; ?>">Prévia</a>
+
+            <a href="<?= URL_BASE ?>/projetos/pagemaker?section=conteudo" class="sb-item <?php echo verificarAtivo('pagemaker', $paginaAtual, 'section', 'conteudo'); ?>"> <span class="sb-icon"></span> Conteúdo
+            </a>
+
+
+            <a href="<?= URL_BASE ?>/projetos/pagemaker?section=elementos" class="sb-item <?php echo verificarAtivo('pagemaker', $paginaAtual, 'section', 'elementos'); ?>"> <span class="sb-icon"></span> Elementos Extras
+            </a>
+
+            <a href="<?= URL_BASE ?>/projetos/pagemaker?section=previsa" class="sb-item <?php echo verificarAtivo('pagemaker', $paginaAtual, 'section', 'previsa'); ?>"> <span class="sb-icon"></span> Prévia
+            </a>
+
         </div>
 
         <!-- Usuários -->
