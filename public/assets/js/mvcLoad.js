@@ -641,12 +641,12 @@ function salvarMvcNoHistorico() {
     let xhr = new XMLHttpRequest();
     xhr.open('POST', URL_BASE + '/projetos/mvc-creator/salvar-historico', true);
     xhr.onreadystatechange = function () {
+        console.log(JSON.parse(xhr.responseText));
         if (xhr.readyState === 4) {
             if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = textoOriginal;
             }
-
             if (xhr.status === 200) {
                 try {
                     let res = JSON.parse(xhr.responseText);
