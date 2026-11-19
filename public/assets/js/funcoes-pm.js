@@ -6,10 +6,16 @@
     let arquivoImagemSelecionado = null;
     let larguraPrevia = 1200;
     let alteracoesPendentes = false;
+    let saindoParaMvc = false;
 
     const buscar = (id) => document.getElementById(id);
     const ler = (id, padrao = '') => buscar(id)?.value.trim() || padrao;
     const marcado = (id) => buscar(id)?.checked === true;
+
+    function obterNomeArquivo() {
+        const nomeBase = ler('nomeArquivo', 'pagina').replace(/\.html?$/i, '');
+        return nomeBase.replace(/[^A-Za-z0-9_-]/g, '') || 'pagina';
+    }
 
     function criarCampoLink() {
         const grupo = document.createElement('div');
@@ -70,8 +76,7 @@
         return `rgba(${valores.join(', ')}, ${opacidade})`;
     }
 
-    function gerarCss(comComentarios = false) {
-        const comentario = (texto) => comComentarios ? `/* ${texto} */\n` : '';
+    function gerarCss() {
         const tamanhos = { small: '14px', medium: '18px', large: '24px', outro: '18px' };
         const tamanhoSelecionado = ler('tamanhoFonte', 'medium');
         const tamanhoCustom = Number(ler('tamanhoFonteCustom', '18'));
@@ -80,13 +85,23 @@
             : (tamanhos[tamanhoSelecionado] || tamanhos.medium);
         const largura = ler('larguraImagem', 'auto');
         const sombra = { none: 'none', leve: '0 4px 14px rgba(0,0,0,.15)', forte: '0 10px 28px rgba(0,0,0,.3)' }[ler('tipoSombra', 'none')];
+        const corFundo = ler('corFundo', '#ffffff');
+        const corGradienteInicial = ler('corGradienteInicial', '#ffffff');
+        const corGradienteFinal = ler('corGradienteFinal', '#e8e8ff');
         const opacidade = Number(ler('opacidadeFundo', '100')) / 100;
-        const fundoInicial = converterCor(ler('corGradienteInicial', '#ffffff'), opacidade);
-        const fundoFinal = converterCor(ler('corGradienteFinal', '#e8e8ff'), opacidade);
         const imagemFundo = ler('imagemFundo');
-        const fundo = imagemFundo
-            ? `linear-gradient(${fundoInicial}, ${fundoFinal}), url('${imagemFundo}')`
-            : `linear-gradient(${fundoInicial}, ${fundoFinal})`;
+        const gradientePersonalizado = corGradienteInicial !== '#ffffff'
+            || corGradienteFinal !== '#e8e8ff'
+            || opacidade !== 1;
+        const usarGradiente = gradientePersonalizado || (!imagemFundo && corFundo === '#ffffff');
+        const camadasFundo = [];
+        if (usarGradiente) {
+            const fundoInicial = converterCor(corGradienteInicial, opacidade);
+            const fundoFinal = converterCor(corGradienteFinal, opacidade);
+            camadasFundo.push(`linear-gradient(${fundoInicial}, ${fundoFinal})`);
+        }
+        if (imagemFundo) camadasFundo.push(`url('${imagemFundo}')`);
+        const fundo = camadasFundo.join(', ') || 'none';
         const estilo = document.querySelector('input[name="estiloLinks"]:checked')?.value === '0' ? 'none' : 'underline';
         const urlFonte = ler('urlFonte');
         let familiaFonte = 'Arial';
@@ -100,15 +115,15 @@
             }
         }
 
-        return `${urlFonte ? `@import url('${urlFonte}');\n\n` : ''}${comentario('Variáveis de cores reutilizadas pelas regras abaixo. Duplique uma variável para criar outra cor reutilizável.')}:root {
-    --cor-fundo: ${ler('corFundo', '#ffffff')};
+        return `${urlFonte ? `@import url('${urlFonte}');\n\n` : ''}:root {
+    --cor-fundo: ${corFundo};
     --cor-fonte: ${ler('corFonte', '#000000')};
     --cor-links: ${ler('corLinks', '#0000ff')};
     --cor-botao: ${ler('corBotao', '#5b6af0')};
     --cor-botao-hover: ${ler('corBotaoHover', '#4a59df')};
 }
 
-${comentario('Estilo geral da página: fundo, fonte, espaçamento e texto. Duplique a regra para criar um estilo para outra área.')}body {
+body {
     background-color: var(--cor-fundo);
     background-image: ${fundo};
     background-size: cover;
@@ -121,14 +136,14 @@ ${comentario('Estilo geral da página: fundo, fonte, espaçamento e texto. Dupli
     padding: ${ler('preenchimentoPagina', '24')}px;
 }
 
-${comentario('Cabeçalho da página. Duplique o elemento <header> no HTML para adicionar outro cabeçalho.')}header {
+header {
     border-radius: ${ler('raioBorda', '8')}px;
     box-shadow: ${sombra};
     padding: ${ler('preenchimentoPagina', '24')}px;
     ${marcado('cabecalhoFixo') ? 'position: sticky; top: 0; z-index: 2;' : ''}
 }
 
-${comentario('Organiza os elementos principais em colunas e controla alinhamento e espaçamento.')}.grade-conteudo {
+.grade-conteudo {
     align-items: ${ler('alinhamentoVertical', 'flex-start')};
     display: flex;
     flex-direction: row;
@@ -137,31 +152,28 @@ ${comentario('Organiza os elementos principais em colunas e controla alinhamento
     justify-content: ${ler('alinhamentoHorizontal', 'flex-start')};
 }
 
-${comentario('Define a largura dos elementos filhos da área principal. Duplique elementos no HTML para preencher as colunas.')}.grade-conteudo > * {
+.grade-conteudo > * {
     flex: 1 1 calc(${100 / Number(ler('tipoLayout', '1'))}% - 24px);
     min-width: 0;
 }
 
-${comentario('Aparência dos links de navegação. Duplique um <a> dentro de <nav> no HTML para criar outro link.')}nav a {
+nav a {
     color: var(--cor-links);
     margin-right: 16px;
     text-decoration: ${estilo};
 }
 
-${comentario('Estilo compartilhado de borda e sombra para imagens, cartões, tabelas e botões.')}img, .cartao-conteudo, table, .botao-cta {
+img, .cartao-conteudo, table, .botao-cta {
     border-radius: ${ler('raioBorda', '8')}px;
     box-shadow: ${sombra};
 }
 
-${comentario('Limita a imagem à largura disponível. Duplique o bloco de imagem no HTML para adicionar outra.')}img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
-${comentario('Aparência dos botões de destaque. Duplique o link com a classe botao-cta no HTML para criar outro botão.') }
+img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
 .botao-cta { background: var(--cor-botao); color: #fff; display: inline-block; padding: 10px 16px; text-decoration: none; }
 .botao-cta:hover { background: var(--cor-botao-hover); }
-${comentario('Organiza os campos do formulário. Duplique os campos no HTML para acrescentar perguntas.') }
 .formulario-contato { display: grid; gap: 12px; max-width: 520px; }
 .formulario-contato input, .formulario-contato textarea { border: 1px solid var(--cor-links); border-radius: ${ler('raioBorda', '8')}px; padding: 10px; }
 
-${comentario('Adapta o conteúdo para telas estreitas, como celulares. Ajuste o limite de largura se necessário.') }
 @media (max-width: ${larguraPrevia}px) {
     .grade-conteudo { flex-direction: column; }
     .grade-conteudo > * { flex-basis: auto; width: 100%; }
@@ -177,19 +189,18 @@ ${comentario('Adapta o conteúdo para telas estreitas, como celulares. Ajuste o 
     }
 
     function gerarComponentes(paraDownload = false) {
-        const comentario = (texto) => paraDownload ? `<!-- ${texto} -->\n` : '';
         const imagem = obterImagem(paraDownload);
         const textoAlternativo = ler('altTextImagem') || ler('altImagem') || ler('nomeImagem', 'Imagem do projeto');
         const imagemHtml = imagem ? `<img src="${imagem}" alt="${textoAlternativo}">` : '';
-        const card = marcado('incluirCard') ? `${comentario('Cartão de conteúdo. Duplique este <article> para adicionar outro cartão e altere seu título, texto e link.')}<article class="cartao-conteudo">${imagemHtml}<h2>${ler('textoCabecalho', 'Meu Projeto')}</h2><p>${ler('textoPagina', 'Conteúdo do card')}</p><a class="botao-cta" href="${ler('linkBotao', '#')}">${ler('textoBotao', 'Saiba mais')}</a></article>` : '';
-        const formulario = marcado('incluirFormulario') ? `${comentario('Formulário de exemplo. Duplique os campos para incluir perguntas; conecte-o a um serviço para receber os envios.')}<form class="formulario-contato"><input placeholder="Nome" required><input type="email" placeholder="Email" required><textarea placeholder="Mensagem" required></textarea><button class="botao-cta" type="submit">Enviar</button></form>` : '';
-        const lista = marcado('incluirLista') ? `${comentario('Lista de itens. Duplique o elemento <li> para acrescentar itens.')}<ul><li>Item da lista</li></ul>` : '';
-        const tabela = marcado('incluirTabela') ? `${comentario('Tabela simples. Duplique a linha <tr> e suas células <td> para adicionar dados.')}<table border="1"><tr><td>Dados</td></tr></table>` : '';
-        const rodape = marcado('incluirRodape') ? `${comentario('Rodapé da página. Duplique ou edite este <footer> para incluir outras informações ao final.')}<footer>Gerado pelo DevStudio</footer>` : '';
+        const card = marcado('incluirCard') ? `<article class="cartao-conteudo">${imagemHtml}<h2>${ler('textoCabecalho', 'Meu Projeto')}</h2><p>${ler('textoPagina', 'Conteúdo do card')}</p><a class="botao-cta" href="${ler('linkBotao', '#')}">${ler('textoBotao', 'Saiba mais')}</a></article>` : '';
+        const formulario = marcado('incluirFormulario') ? `<form class="formulario-contato"><input placeholder="Nome" required><input type="email" placeholder="Email" required><textarea placeholder="Mensagem" required></textarea><button class="botao-cta" type="submit">Enviar</button></form>` : '';
+        const lista = marcado('incluirLista') ? '<ul><li>Item da lista</li></ul>' : '';
+        const tabela = marcado('incluirTabela') ? '<table border="1"><tr><td>Dados</td></tr></table>' : '';
+        const rodape = marcado('incluirRodape') ? '<footer>Gerado pelo DevStudio</footer>' : '';
         const ordem = ler('ordemElementos', 'texto-imagem-lista-tabela').split('-');
         const elementos = {
-            texto: `${comentario('Bloco de texto. Duplique este <p> para adicionar outro parágrafo.')}<p class="bloco-texto">${ler('textoPagina', 'Conteúdo da página')}</p>`,
-            imagem: imagemHtml ? `${comentario('Bloco de imagem. Duplique esta <div> e altere o src e o alt da imagem para adicionar outra.')}<div class="bloco-imagem">${imagemHtml}</div>` : '',
+            texto: `<p class="bloco-texto">${ler('textoPagina', 'Conteúdo da página')}</p>`,
+            imagem: imagemHtml ? `<div class="bloco-imagem">${imagemHtml}</div>` : '',
             lista,
             tabela
         };
@@ -198,25 +209,15 @@ ${comentario('Adapta o conteúdo para telas estreitas, como celulares. Ajuste o 
     }
 
     function gerarHtml(paraDownload = false) {
-        const comentario = (texto) => paraDownload ? `    <!-- ${texto} -->\n` : '';
         const links = gerarLinks();
         const componentes = gerarComponentes(paraDownload);
         return `<!doctype html>
 <html lang="pt-BR">
-${comentario('Página gerada pelo DevStudio. Edite o conteúdo abaixo conforme necessário.')}
-<head>
-    ${comentario('Metadados e título da aba. Edite o <title> para mudar o nome mostrado pelo navegador.')}
-    <meta charset="utf-8">
-    <title>${ler('tituloAba', 'Meu Projeto')}</title>
-    <link rel="stylesheet" href="estilo.css">
-</head>
+<head><meta charset="utf-8"><title>${ler('tituloAba', 'Meu Projeto')}</title><link rel="stylesheet" href="estilo.css"></head>
 <body>
-${comentario('Cabeçalho da página. Duplique o elemento <header> para acrescentar outro cabeçalho.')}
     <header><h1>${ler('textoCabecalho', 'Meu Projeto')}</h1></header>
-    ${links ? `${comentario('Navegação. Duplique um elemento <a> dentro de <nav> para adicionar outro link.')}<nav>${links}</nav>` : ''}
-${comentario('Conteúdo principal. Os blocos abaixo podem ser duplicados para acrescentar elementos.')}
+    ${links ? `<nav>${links}</nav>` : ''}
     <main class="grade-conteudo">${componentes.conteudo}</main>
-${comentario('Botão de destaque. Duplique este link para criar outro botão e altere o texto e o href.')}
     <a class="botao-cta" href="${ler('linkBotao', '#')}">${ler('textoBotao', 'Saiba mais')}</a>
     ${componentes.rodape}
 </body>
@@ -224,8 +225,8 @@ ${comentario('Botão de destaque. Duplique este link para criar outro botão e a
     }
 
     function atualizarSaida() {
-        buscar('codeCSS').value = gerarCss(true);
-        buscar('codeHTML').value = gerarHtml(true);
+        buscar('codeCSS').value = gerarCss();
+        buscar('codeHTML').value = gerarHtml();
         renderizarPrevia();
     }
 
@@ -252,9 +253,10 @@ ${comentario('Botão de destaque. Duplique este link para criar outro botão e a
     async function baixarZip() {
         atualizarSaida();
         const raiz = buscar('pageMaker');
+        const nomeArquivo = obterNomeArquivo();
         const dados = new FormData();
-        dados.append('nomeArquivo', ler('nomeArquivo', 'pagina'));
-        dados.append('html', buscar('codeHTML').value);
+        dados.append('nomeArquivo', nomeArquivo);
+        dados.append('html', gerarHtml(true));
         dados.append('css', buscar('codeCSS').value);
         if (arquivoImagemSelecionado) {
             dados.append('imagem', arquivoImagemSelecionado, arquivoImagemSelecionado.name);
@@ -274,10 +276,9 @@ ${comentario('Botão de destaque. Duplique este link para criar outro botão e a
         const url = URL.createObjectURL(arquivo);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${ler('nomeArquivo', 'pagina').replace(/[^A-Za-z0-9_-]/g, '') || 'pagina'}.zip`;
+        link.download = `${nomeArquivo}.zip`;
         link.click();
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-        alteracoesPendentes = false;
         const statusEl = buscar('pmHistoricoStatus');
         if (statusEl) {
             statusEl.textContent = arquivoImagemSelecionado
@@ -290,8 +291,8 @@ ${comentario('Botão de destaque. Duplique este link para criar outro botão e a
     async function salvarNoHistorico() {
         atualizarSaida();
         const raiz = buscar('pageMaker');
-        const nomeArquivo = ler('nomeArquivo', 'pagina').replace(/[^A-Za-z0-9_-]/g, '') || 'pagina';
-        const html = buscar('codeHTML').value;
+        const nomeArquivo = obterNomeArquivo();
+        const html = gerarHtml(true);
         const css = buscar('codeCSS').value;
         const statusEl = buscar('pmHistoricoStatus');
 
@@ -320,7 +321,6 @@ ${comentario('Botão de destaque. Duplique este link para criar outro botão e a
             });
             const res = await resp.json();
             if (res.sucesso) {
-                alteracoesPendentes = false;
                 if (statusEl) {
                     statusEl.textContent = `Página "${nomeArquivo}" salva no Histórico com sucesso!`;
                     statusEl.style.color = '#4ade80';
@@ -337,6 +337,39 @@ ${comentario('Botão de destaque. Duplique este link para criar outro botão e a
                 statusEl.style.color = '#ef4444';
             }
         }
+    }
+
+    async function usarNoMvcCreator() {
+        atualizarSaida();
+        const raiz = buscar('pageMaker');
+        const statusEl = buscar('pmHistoricoStatus');
+        const dados = new FormData();
+        dados.append('nomeArquivo', obterNomeArquivo());
+        dados.append('html', gerarHtml(true));
+        dados.append('css', buscar('codeCSS').value);
+        if (arquivoImagemSelecionado) {
+            dados.append('imagem', arquivoImagemSelecionado, arquivoImagemSelecionado.name);
+            dados.append('nomeImagemArquivo', obterNomeArquivoImagem(arquivoImagemSelecionado));
+        }
+
+        if (statusEl) {
+            statusEl.textContent = 'Conectando o layout ao MVC Creator...';
+            statusEl.style.color = 'var(--muted)';
+        }
+
+        const resposta = await fetch(`${raiz.dataset.urlBase}/projetos/pagemaker/vincular-mvc`, {
+            method: 'POST',
+            body: dados
+        });
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.sucesso || !resultado.redirectUrl) {
+            throw new Error(resultado.mensagem || 'Não foi possível conectar o layout ao MVC Creator.');
+        }
+
+        saindoParaMvc = true;
+        alteracoesPendentes = false;
+        sessionStorage.removeItem('mvc_pageMakerIntegracao');
+        window.location.href = resultado.redirectUrl;
     }
 
     function atualizarValores() {
@@ -361,6 +394,15 @@ ${comentario('Botão de destaque. Duplique este link para criar outro botão e a
             atualizarSaida();
         });
         buscar('visualizarPrevia')?.addEventListener('click', atualizarSaida);
+        buscar('usarNoMvcCreator')?.addEventListener('click', () => {
+            usarNoMvcCreator().catch((erro) => {
+                const status = buscar('pmHistoricoStatus');
+                if (status) {
+                    status.textContent = erro.message;
+                    status.style.color = '#ef4444';
+                }
+            });
+        });
         buscar('salvarHistorico')?.addEventListener('click', () => {
             salvarNoHistorico().catch((erro) => {
                 const status = buscar('pmHistoricoStatus');
@@ -394,94 +436,10 @@ ${comentario('Botão de destaque. Duplique este link para criar outro botão e a
                 atualizarSaida();
             }
         });
-        // Alerta flutuante no topo seguindo os alerts do sistema (DevStudio Identity)
-        function devstudioConfirmarSaida(urlDestino) {
-            let container = document.getElementById('devstudioToastContainer');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'devstudioToastContainer';
-                container.className = 'devstudio-toast-container';
-                document.body.appendChild(container);
-            }
-
-            // Remove alertas de confirmação anteriores se existirem
-            container.querySelectorAll('.devstudio-toast-confirmacao').forEach(el => el.remove());
-
-            const toast = document.createElement('div');
-            toast.className = 'devstudio-toast devstudio-toast-aviso devstudio-toast-confirmacao';
-            toast.style.pointerEvents = 'auto';
-
-            toast.innerHTML = `
-                <i class="bi bi-exclamation-triangle-fill devstudio-toast-icon" style="color: #f59e0b;" aria-hidden="true"></i>
-                <div class="devstudio-toast-content">
-                    <div class="devstudio-toast-title">Alterações Não Salvas</div>
-                    <span>Você realizou modificações no PageMaker. Se sair agora, as alterações não salvas serão perdidas.</span>
-                    <div style="display: flex; gap: 8px; margin-top: 10px;">
-                        <button type="button" class="btn btn-secondary btn-sm" id="pmBtnFicar" style="padding: 4px 10px; font-size: 12px; cursor: pointer;">Continuar Editando</button>
-                        <button type="button" class="btn btn-sm" id="pmBtnSair" style="padding: 4px 10px; font-size: 12px; background: #f59e0b; color: #fff; border: none; cursor: pointer;">Descartar e Sair</button>
-                    </div>
-                </div>
-                <button type="button" class="devstudio-toast-close" aria-label="Fechar">&times;</button>
-            `;
-
-            const fechar = () => {
-                toast.classList.add('is-hiding');
-                setTimeout(() => {
-                    if (toast.parentNode) toast.parentNode.removeChild(toast);
-                }, 260);
-            };
-
-            toast.querySelector('.devstudio-toast-close')?.addEventListener('click', fechar);
-            toast.querySelector('#pmBtnFicar')?.addEventListener('click', fechar);
-            toast.querySelector('#pmBtnSair')?.addEventListener('click', () => {
-                alteracoesPendentes = false;
-                fechar();
-                if (urlDestino) {
-                    window.location.href = urlDestino;
-                }
-            });
-
-            container.appendChild(toast);
-        }
-
-        // Intercepta navegações via links
-        document.addEventListener('click', (evento) => {
-            const link = evento.target.closest('a');
-            if (!link) return;
-
-            const href = link.getAttribute('href') || '';
-
-            // Se for âncora de seção do PageMaker (#secao-...), faz rolagem suave sem recarregar nem disparar alerta
-            if (href.includes('#secao-')) {
-                const secaoId = href.split('#')[1];
-                const alvo = document.getElementById(secaoId);
-                if (alvo) {
-                    evento.preventDefault();
-                    alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    document.querySelectorAll('#sb-titulo-PageMaker .sb-item').forEach(el => el.classList.remove('active'));
-                    const itemSidebar = link.closest('.sb-item') || link;
-                    itemSidebar.classList.add('active');
-                    return;
-                }
-            }
-
-            // Se não há alterações pendentes, permite navegação normal
-            if (!alteracoesPendentes) return;
-
-            // Ignora âncoras locais, javascript e nova aba
-            if (href.startsWith('#') || href.startsWith('javascript:') || link.target === '_blank') {
-                return;
-            }
-
-            // Bloqueia e exibe alerta do sistema no topo
-            evento.preventDefault();
-            devstudioConfirmarSaida(link.href);
-        });
-
         window.addEventListener('beforeunload', (evento) => {
-            if (!alteracoesPendentes) return;
+            if (!alteracoesPendentes || saindoParaMvc) return;
             evento.preventDefault();
-            evento.returnValue = '';
+            evento.returnValue = 'Se você sair desta página, perderá as alterações feitas.';
         });
         buscar('fileImagem')?.addEventListener('change', (evento) => {
             const arquivo = evento.target.files[0];

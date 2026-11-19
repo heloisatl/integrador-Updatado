@@ -1,64 +1,6 @@
-/* ==========================================================================
-   Padronização Visual da Barra Lateral do PageMaker
-   ========================================================================== */
-#pagemaker #sb-titulo-PageMaker,
-#pageMaker #sb-titulo-PageMaker,
-body#pagemaker #sb-titulo-PageMaker {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-#sb-titulo-PageMaker .sb-item {
-    display: flex;
-    align-items: center;
-    color: var(--text);
-    text-decoration: none;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 500;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    cursor: pointer;
-}
-
-#sb-titulo-PageMaker .sb-item:hover {
-    background-color: var(--panel) !important;
-    color: var(--accent) !important;
-}
-
-#sb-titulo-PageMaker .sb-item.active {
-    background-color: var(--accent) !important;
-    color: #ffffff !important;
-    font-weight: 500;
-}
-
-#sb-titulo-PageMaker .sb-item.active:hover {
-    background-color: var(--accent-h, #4a59df) !important;
-    color: #ffffff !important;
-}
-
 .pm-etapa-wrapper {
     margin: 0 0 18px;
     width: 100%;
-}
-
-.pm-page-header > div {
-    max-width: 760px;
-    min-width: 0;
-}
-
-.pm-page-header .page-paragraph {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 0 8px 8px 0;
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.55;
-    margin: 12px 0 0;
-    padding: 10px 14px;
 }
 
 .pm-etapa,
@@ -297,11 +239,6 @@ output {
     .pm-etapa,
     .pm-cartao {
         padding: 18px;
-    }
-
-    .pm-page-header .page-paragraph {
-        font-size: 13px;
-        padding: 9px 12px;
     }
 
     .pm-campo-completo,

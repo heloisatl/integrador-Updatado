@@ -8,6 +8,7 @@ require_once __DIR__ . '/../app/config/Config.php';
 
 use app\core\Router;
 
+// Servir arquivos estáticos solicitados na raiz (como /favicon.svg, /favicon.ico)
 $uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 if ($uriPath !== '/' && file_exists(__DIR__ . $uriPath) && is_file(__DIR__ . $uriPath)) {
     $ext = strtolower(pathinfo($uriPath, PATHINFO_EXTENSION));
@@ -78,15 +79,15 @@ $router->post("/projetos/previewEstrutura","ProjetoController@previewEstrutura")
 // mas nunca tiveram rota registrada -> por isso davam 404 / não abriam.
 $router->get("/projetos/guia", "ProjetoController@guia");
 $router->get("/projetos/mvc-creator", "ProjetoController@mvcCreator");
-$router->post("/projetos/mvc-creator/salvar-historico", "ProjetoController@salvarMvcHistorico");
 $router->get("/projetos/pagemaker", "ProjetoController@pageMaker");
+$router->post("/projetos/pagemaker/vincular-mvc", "ProjetoController@salvarPageMakerParaMvc");
 $router->post("/projetos/pagemaker/baixarZip", "ProjetoController@baixarPageMakerZip");
 $router->post("/projetos/pagemaker/salvar-historico", "ProjetoController@salvarPageMakerHistorico");
 $router->get("/projetos/historico", "ProjetoController@historico");
 $router->get("/projetos/historico/baixar", "ProjetoController@baixarProjetoHistorico");
 $router->get("/projetos/historico/apagar", "ProjetoController@apagarProjetoHistorico");
 $router->get("/projetos/historico/limpar", "ProjetoController@limparHistorico");
-$router->post("/projetos/historico/salvar", "ProjetoController@registrarHistoricoJson");
+$router->post("/projetos/historico/salvar", "ProjetoController@registrarProjetoHistoricoJson");
 $router->get("/projetos/historico/listar", "ProjetoController@listarHistoricoJson");
 $router->get("/projetos/phpmeuamigo", "PhpMeuAmigoController@index");
 

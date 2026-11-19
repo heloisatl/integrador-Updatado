@@ -200,7 +200,9 @@ function carregarBanco() {
         data.append("mvc_servidor", srv);
         data.append("mvc_porta", porta);
         data.append("mvc_usuario", usr);
-        data.append("mvc_senha", pass);
+        if (pass !== "") {
+            data.append("mvc_senha", pass);
+        }
 
         let xhr = new XMLHttpRequest();
         xhr.open("POST", URL_BASE + "/phpmeuamigo/conectar-mysql-local", true);
@@ -226,8 +228,16 @@ function carregarBanco() {
                 } catch (e) {
                     console.error("Erro ao processar listagem de bancos locais:", e);
                     elBanco.innerHTML = "<option value=''>Erro ao carregar bancos locais</option>";
+                    mostrarErro("Não foi possível interpretar a resposta ao carregar os bancos locais.");
                 }
+            } else {
+                elBanco.innerHTML = "<option value=''>Erro ao carregar bancos locais</option>";
+                mostrarErro("Falha ao consultar os bancos locais (HTTP " + xhr.status + ").");
             }
+        };
+        xhr.onerror = function () {
+            elBanco.innerHTML = "<option value=''>Erro ao carregar bancos locais</option>";
+            mostrarErro("Falha de rede ao consultar os bancos locais.");
         };
         xhr.send(data);
         return;
@@ -340,7 +350,10 @@ function carregarTabelas(salvarConfig = true) {
     data.append('servidor', sessionStorage.getItem("mvc_servidor") || defaultHost);
     data.append('porta', sessionStorage.getItem("mvc_porta") || "3306");
     data.append('usuario', sessionStorage.getItem("mvc_usuario") || "root");
-    data.append('senha', sessionStorage.getItem("mvc_senha") || "");
+    const senha = sessionStorage.getItem("mvc_senha") || "";
+    if (senha !== "") {
+        data.append('senha', senha);
+    }
 
     let xhr = new XMLHttpRequest();
     xhr.open('POST', URL_BASE + '/projetos/getTabelas', true);
@@ -362,8 +375,14 @@ function carregarTabelas(salvarConfig = true) {
                 }
             } catch (e) {
                 console.error("Erro no parse JSON", e);
+                mostrarErro("Não foi possível interpretar a resposta ao carregar as tabelas.");
             }
+        } else if (xhr.readyState === 4) {
+            mostrarErro("Falha ao carregar as tabelas (HTTP " + xhr.status + ").");
         }
+    };
+    xhr.onerror = function () {
+        mostrarErro("Falha de rede ao carregar as tabelas do banco.");
     };
     xhr.send(data);
 }
@@ -617,86 +636,3 @@ function baixarNovamenteZip() {
     }
     window.location.href = window.ultimoDownloadUrl;
 }
-
-function salvarMvcNoHistorico() {
-    let nomeProjeto = (sessionStorage.getItem("mvc_nomeProjeto") || "").trim() || "meu_projeto";
-
-    if (obterTabelasSelecionadas().length === 0) {
-        mostrarErro("Selecione ao menos uma tabela antes de salvar no Histórico.", "aviso");
-        return;
-    }
-
-    fecharAlerta();
-
-    const data = montarDadosEscolhas();
-    data.set('nomeProjeto', nomeProjeto);
-
-    let btn = document.getElementById("btn-salvar-historico-mvc");
-    const textoOriginal = btn ? btn.innerHTML : "Salvar no Histórico";
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando no Histórico...';
-    }
-
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', URL_BASE + '/projetos/mvc-creator/salvar-historico', true);
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4) {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = textoOriginal;
-            }
-
-            if (xhr.status === 200) {
-                try {
-                    let res = JSON.parse(xhr.responseText);
-                    if (res.sucesso) {
-                        mostrarErro(res.mensagem || "Projeto salvo com sucesso! Redirecionando...", "sucesso");
-                        setTimeout(function () {
-                            window.location.href = res.redirect || (URL_BASE + '/projetos/historico');
-                        }, 700);
-                    } else {
-                        mostrarErro("Erro ao salvar no Histórico: " + (res.mensagem || "Falha desconhecida."));
-                    }
-                } catch (e) {
-                    mostrarErro("Resposta inesperada do servidor ao salvar no histórico.");
-                    console.error(e);
-                }
-            } else {
-                mostrarErro("Erro de comunicação ao salvar no Histórico (Status " + xhr.status + ").");
-            }
-        }
-    };
-    xhr.send(data);
-}
-
-// Destaca ativamente o item da etapa atual na barra lateral do MVC Creator
-(function sincronizarEtapaSidebarMvc() {
-    function atualizarEtapaAtiva() {
-        const params = new URLSearchParams(window.location.search);
-        const stepAtual = params.get('step') || 'configurar';
-        const container = document.getElementById('sb-titulo-MVC');
-        if (!container) return;
-
-        const itens = container.querySelectorAll('.sb-item');
-        itens.forEach(function (item) {
-            const href = item.getAttribute('href') || '';
-            if (href.includes('step=' + stepAtual)) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
-            }
-
-            item.addEventListener('click', function () {
-                itens.forEach(el => el.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', atualizarEtapaAtiva);
-    } else {
-        atualizarEtapaAtiva();
-    }
-})();
