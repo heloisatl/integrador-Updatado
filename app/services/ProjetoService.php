@@ -58,6 +58,22 @@ class ProjetoService{
         return $this->projetoRepository->deleteAllByUsuario($idUsuario);
     }
 
+    public function contarProjetosMvc(int $idUsuario): int {
+        return $this->projetoRepository->contarProjetosMvc($idUsuario);
+    }
+
+    public function contarProjetosPageMaker(int $idUsuario): int {
+        return $this->projetoRepository->contarProjetosPageMaker($idUsuario);
+    }
+
+    public function apagarMaisAntigoMvcSeLimite(int $idUsuario, int $limite = 10): ?array {
+        return $this->projetoRepository->apagarMaisAntigoMvcSeLimite($idUsuario, $limite);
+    }
+
+    public function apagarMaisAntigoPageMakerSeLimite(int $idUsuario, int $limite = 10): ?array {
+        return $this->projetoRepository->apagarMaisAntigoPageMakerSeLimite($idUsuario, $limite);
+    }
+
     public function apagarProjetoMaisAntigoSeLimite(int $idUsuario, int $limite = 10): ?array {
         return $this->projetoRepository->apagarProjetoMaisAntigoSeLimite($idUsuario, $limite);
     }

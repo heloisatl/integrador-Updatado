@@ -123,7 +123,7 @@ class AutenticacaoController extends Controller
         }
 
         try {
-            require_once __DIR__ . '/../tools/mail/EmailService.php';
+            require_once __DIR__ . '/../helpers/mail/EmailService.php';
             $emailService = new \EmailService();
             $emailService->enviarNovaSenha($email, $novaSenha);
 
@@ -201,10 +201,18 @@ class AutenticacaoController extends Controller
 
     public function salvarCadastro(): void
     {
+        $senha = (string) ($_POST['senha'] ?? '');
+        $erroSenha = \app\helpers\Validador::validarSenha($senha);
+        if ($erroSenha !== null) {
+            $_SESSION['flash_erro'] = 'Senha inválida: a senha deve conter no mínimo 10 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.';
+            $this->redirect(URL_BASE . '/cadastro');
+            return;
+        }
+
         $dados = [
             'nome' => trim((string) ($_POST['nome'] ?? '')),
             'email' => trim((string) ($_POST['email'] ?? '')),
-            'senha' => (string) ($_POST['senha'] ?? ''),
+            'senha' => $senha,
             'tipo_perfil' => 'usuario',
             'usuario_banco' => '',
             'servidor' => 'localhost',
@@ -214,6 +222,7 @@ class AutenticacaoController extends Controller
             \app\services\LogService::registrar('Novo cadastro de usuário realizado: ' . $dados['nome']);
             $_SESSION['flash_sucesso'] = 'Cadastro realizado com sucesso. Faça login para entrar.';
             $this->redirect(URL_BASE . '/login');
+            return;
         }
 
         $_SESSION['flash_erro'] = 'Não foi possível realizar o cadastro. Verifique se o e-mail já está cadastrado ou se os dados estão corretos.';

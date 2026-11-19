@@ -22,9 +22,9 @@
             Visualizar Estrutura
         </a>
         <?php if (!$isVisitante): ?>
-            <a href="<?= URL_BASE ?>/projetos/historico" id="link-salvar-historico" class="mvc-etapa-botao mvc-etapa-botao-secundario">
-                Salvar no Histórico
-            </a>
+            <button type="button" id="btn-salvar-historico-mvc" onclick="salvarMvcNoHistorico();" class="mvc-etapa-botao mvc-etapa-botao-secundario">
+                <i class="bi bi-bookmark-check"></i> Salvar no Histórico
+            </button>
         <?php endif; ?>
     </div>
 

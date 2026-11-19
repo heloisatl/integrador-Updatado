@@ -1,3 +1,42 @@
+/* ==========================================================================
+   Padronização Visual da Barra Lateral do PageMaker
+   ========================================================================== */
+#sb-titulo-PageMaker {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#sb-titulo-PageMaker .sb-item {
+    display: flex;
+    align-items: center;
+    color: var(--text);
+    text-decoration: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    cursor: pointer;
+}
+
+#sb-titulo-PageMaker .sb-item:hover {
+    background-color: var(--panel) !important;
+    color: var(--accent) !important;
+}
+
+#sb-titulo-PageMaker .sb-item.active {
+    background-color: var(--accent) !important;
+    color: #ffffff !important;
+    font-weight: 500;
+}
+
+#sb-titulo-PageMaker .sb-item.active:hover {
+    background-color: var(--accent-h, #4a59df) !important;
+    color: #ffffff !important;
+}
+
 .pm-etapa-wrapper {
     margin: 0 0 18px;
     width: 100%;

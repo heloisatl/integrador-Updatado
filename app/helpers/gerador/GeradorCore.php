@@ -1,5 +1,5 @@
 <?php
-namespace app\tools\gerador;
+namespace app\helpers\gerador;
 
 
 

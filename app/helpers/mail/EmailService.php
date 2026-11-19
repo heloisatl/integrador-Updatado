@@ -2,9 +2,9 @@
 
 require_once __DIR__ . "/../../config/Config.php";
 
-require_once ROOT_PATH . "/app/tools/mail/lib/PHPMailer/src/PHPMailer.php";
-require_once ROOT_PATH . "/app/tools/mail/lib/PHPMailer/src/SMTP.php";
-require_once ROOT_PATH . "/app/tools/mail/lib/PHPMailer/src/Exception.php";
+require_once ROOT_PATH . "/app/helpers/mail/lib/PHPMailer/src/PHPMailer.php";
+require_once ROOT_PATH . "/app/helpers/mail/lib/PHPMailer/src/SMTP.php";
+require_once ROOT_PATH . "/app/helpers/mail/lib/PHPMailer/src/Exception.php";
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;

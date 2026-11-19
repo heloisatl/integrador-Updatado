@@ -14,8 +14,10 @@ $historicoPorModulo = [
         }
         $historicoPorModulo[$modulo][] = $item;
     }
+    $totalMvc = count($historicoPorModulo['MVC Creator'] ?? []);
+    $totalPageMaker = count($historicoPorModulo['PageMaker'] ?? []);
     $totalHistorico = count($historico ?? []);
-    $limiteHistorico = 10;
+    $limiteModulo = 10;
     ?>
 
     <link rel="stylesheet" href="<?= URL_BASE_CSS ?>/form-styles.css">
@@ -554,7 +556,14 @@ $historicoPorModulo = [
                     </h1>
                 </div>
                 <div class="page-actions">
-                    <span class="historico-contagem" aria-label="<?= $totalHistorico ?> de <?= $limiteHistorico ?> projetos salvos"><?= $totalHistorico ?> / <?= $limiteHistorico ?> projetos</span>
+                    <div class="historico-contadores-independentes" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <span class="historico-contagem" title="Projetos salvos no MVC Creator" aria-label="<?= $totalMvc ?> de <?= $limiteModulo ?> projetos MVC Creator salvos">
+                            <i class="bi bi-braces" style="color: var(--accent);"></i> MVC: <strong><?= $totalMvc ?></strong>/<?= $limiteModulo ?>
+                        </span>
+                        <span class="historico-contagem" title="Páginas salvas no PageMaker" aria-label="<?= $totalPageMaker ?> de <?= $limiteModulo ?> projetos PageMaker salvos">
+                            <i class="bi bi-file-earmark-code" style="color: #38bdf8;"></i> PageMaker: <strong><?= $totalPageMaker ?></strong>/<?= $limiteModulo ?>
+                        </span>
+                    </div>
                     <a class="btn btn-secondary" href="<?= URL_BASE ?>/projetos/mvc-creator"><i class="bi bi-braces"></i> Novo MVC Creator</a>
                     <a class="btn btn-secondary" href="<?= URL_BASE ?>/projetos/pagemaker"><i class="bi bi-file-earmark-code"></i> Novo PageMaker</a>
                     <?php if (!empty($historico)): ?>
@@ -565,7 +574,7 @@ $historicoPorModulo = [
 
             <div class="historico-aviso-limite" role="note">
                 <span class="historico-aviso-icone" aria-hidden="true">i</span>
-                <span><strong>Armazenamento e Retenção:</strong> Projetos armazenados no sistema são removidos automaticamente após 60 dias para evitar sobrecarga de armazenamento no servidor. Além disso, cada usuário pode manter até <?= $limiteHistorico ?> projetos por módulo (ao atingir a cota, o projeto mais antigo é substituído automaticamente).</span>
+                <span><strong>Armazenamento e Retenção:</strong> Projetos armazenados no sistema são removidos automaticamente após 60 dias para evitar sobrecarga de armazenamento no servidor. Além disso, cada usuário possui limites independentes de até <?= $limiteModulo ?> projetos para o MVC Creator e <?= $limiteModulo ?> projetos para o PageMaker (ao atingir a cota individual do módulo, o projeto mais antigo daquele módulo é substituído automaticamente).</span>
             </div>
 
             <section class="historico-panel">
@@ -576,8 +585,9 @@ $historicoPorModulo = [
                             <?php foreach ($historicoPorModulo as $modulo => $itens): ?>
                                 <?php if (empty($itens)) continue; ?>
                                 <div class="historico-section-block">
-                                    <div class="historico-title">
+                                    <div class="historico-title" style="display: flex; align-items: center; justify-content: space-between;">
                                         <h3><?= htmlspecialchars($modulo) ?></h3>
+                                        <span class="historico-contagem" style="font-size: 11px; padding: 2px 8px;"><?= count($itens) ?> / <?= $limiteModulo ?></span>
                                     </div>
                                     <div class="historico-cards-grid">
                                     <?php foreach ($itens as $item): ?>
