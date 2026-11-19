@@ -42,7 +42,7 @@ if (isset($_SESSION['usuario_logado']) && method_exists($_SESSION['usuario_logad
                 <div class="grade-ferramentas">
                     <article class="cartao-ferramenta">
                         <span class="icone-ferramenta icone-mvc" aria-hidden="true"><i class="bi bi-braces"></i></span>
-                        <h4>EasyMVC — Gerador PHP</h4>
+                        <h4>MVC Creator — Gerador PHP</h4>
                         <p>Conecte ao banco MySQL, detecte tabelas automaticamente e gere um sistema CRUD completo com Model, View, Controller e DAO.</p>
                         <a class="botao-ferramenta botao-mvc" href="<?= URL_BASE ?>/projetos/mvc-creator">Abrir <span aria-hidden="true">→</span></a>
                     </article>

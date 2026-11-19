@@ -1,5 +1,5 @@
 <?php
-namespace app\tools\gerador;
+namespace app\helpers\gerador;
 
 use app\models\Atributo;
 use app\models\Tabela;

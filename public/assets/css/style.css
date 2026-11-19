@@ -629,6 +629,49 @@ body > .site-footer {
 }
 
 
+/* ==========================================================================
+   Padronização Visual da Sidebar (MVC Creator, PageMaker e Global)
+   ========================================================================== */
+.sidebar .sb-item,
+.sb-section .sb-item {
+    display: flex;
+    align-items: center;
+    color: var(--text);
+    text-decoration: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    cursor: pointer;
+}
+
+.sidebar .sb-item:hover,
+.sb-section .sb-item:hover,
+#sb-titulo-MVC .sb-item:hover,
+#sb-titulo-PageMaker .sb-item:hover {
+    background-color: var(--panel) !important;
+    color: var(--accent) !important;
+}
+
+.sidebar .sb-item.active,
+.sb-section .sb-item.active,
+#sb-titulo-MVC .sb-item.active,
+#sb-titulo-PageMaker .sb-item.active {
+    background-color: var(--accent) !important;
+    color: #ffffff !important;
+    font-weight: 500;
+}
+
+.sidebar .sb-item.active:hover,
+.sb-section .sb-item.active:hover,
+#sb-titulo-MVC .sb-item.active:hover,
+#sb-titulo-PageMaker .sb-item.active:hover {
+    background-color: var(--accent-h, #4a59df) !important;
+    color: #ffffff !important;
+}
+
 /* Esconde todas as seções de sidebar por padrão */
 .sb-section {
     display: none;

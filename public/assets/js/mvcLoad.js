@@ -617,3 +617,55 @@ function baixarNovamenteZip() {
     }
     window.location.href = window.ultimoDownloadUrl;
 }
+
+function salvarMvcNoHistorico() {
+    let nomeProjeto = (sessionStorage.getItem("mvc_nomeProjeto") || "").trim() || "meu_projeto";
+
+    if (obterTabelasSelecionadas().length === 0) {
+        mostrarErro("Selecione ao menos uma tabela antes de salvar no Histórico.", "aviso");
+        return;
+    }
+
+    fecharAlerta();
+
+    const data = montarDadosEscolhas();
+    data.set('nomeProjeto', nomeProjeto);
+
+    let btn = document.getElementById("btn-salvar-historico-mvc");
+    const textoOriginal = btn ? btn.innerHTML : "Salvar no Histórico";
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando no Histórico...';
+    }
+
+    let xhr = new XMLHttpRequest();
+    xhr.open('POST', URL_BASE + '/projetos/mvc-creator/salvar-historico', true);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
+
+            if (xhr.status === 200) {
+                try {
+                    let res = JSON.parse(xhr.responseText);
+                    if (res.sucesso) {
+                        mostrarErro(res.mensagem || "Projeto salvo com sucesso! Redirecionando...", "sucesso");
+                        setTimeout(function () {
+                            window.location.href = res.redirect || (URL_BASE + '/projetos/historico');
+                        }, 700);
+                    } else {
+                        mostrarErro("Erro ao salvar no Histórico: " + (res.mensagem || "Falha desconhecida."));
+                    }
+                } catch (e) {
+                    mostrarErro("Resposta inesperada do servidor ao salvar no histórico.");
+                    console.error(e);
+                }
+            } else {
+                mostrarErro("Erro de comunicação ao salvar no Histórico (Status " + xhr.status + ").");
+            }
+        }
+    };
+    xhr.send(data);
+}

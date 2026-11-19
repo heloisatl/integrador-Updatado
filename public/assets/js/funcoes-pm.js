@@ -262,6 +262,7 @@ img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
         link.download = `${ler('nomeArquivo', 'pagina').replace(/[^A-Za-z0-9_-]/g, '') || 'pagina'}.zip`;
         link.click();
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        alteracoesPendentes = false;
         const statusEl = buscar('pmHistoricoStatus');
         if (statusEl) {
             statusEl.textContent = arquivoImagemSelecionado
@@ -304,6 +305,7 @@ img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
             });
             const res = await resp.json();
             if (res.sucesso) {
+                alteracoesPendentes = false;
                 if (statusEl) {
                     statusEl.textContent = `Página "${nomeArquivo}" salva no Histórico com sucesso!`;
                     statusEl.style.color = '#4ade80';
@@ -377,10 +379,94 @@ img { max-width: 100%; width: ${largura === 'auto' ? 'auto' : largura + 'px'}; }
                 atualizarSaida();
             }
         });
+        // Alerta flutuante no topo seguindo os alerts do sistema (DevStudio Identity)
+        function devstudioConfirmarSaida(urlDestino) {
+            let container = document.getElementById('devstudioToastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'devstudioToastContainer';
+                container.className = 'devstudio-toast-container';
+                document.body.appendChild(container);
+            }
+
+            // Remove alertas de confirmação anteriores se existirem
+            container.querySelectorAll('.devstudio-toast-confirmacao').forEach(el => el.remove());
+
+            const toast = document.createElement('div');
+            toast.className = 'devstudio-toast devstudio-toast-aviso devstudio-toast-confirmacao';
+            toast.style.pointerEvents = 'auto';
+
+            toast.innerHTML = `
+                <i class="bi bi-exclamation-triangle-fill devstudio-toast-icon" style="color: #f59e0b;" aria-hidden="true"></i>
+                <div class="devstudio-toast-content">
+                    <div class="devstudio-toast-title">Alterações Não Salvas</div>
+                    <span>Você realizou modificações no PageMaker. Se sair agora, as alterações não salvas serão perdidas.</span>
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <button type="button" class="btn btn-secondary btn-sm" id="pmBtnFicar" style="padding: 4px 10px; font-size: 12px; cursor: pointer;">Continuar Editando</button>
+                        <button type="button" class="btn btn-sm" id="pmBtnSair" style="padding: 4px 10px; font-size: 12px; background: #f59e0b; color: #fff; border: none; cursor: pointer;">Descartar e Sair</button>
+                    </div>
+                </div>
+                <button type="button" class="devstudio-toast-close" aria-label="Fechar">&times;</button>
+            `;
+
+            const fechar = () => {
+                toast.classList.add('is-hiding');
+                setTimeout(() => {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 260);
+            };
+
+            toast.querySelector('.devstudio-toast-close')?.addEventListener('click', fechar);
+            toast.querySelector('#pmBtnFicar')?.addEventListener('click', fechar);
+            toast.querySelector('#pmBtnSair')?.addEventListener('click', () => {
+                alteracoesPendentes = false;
+                fechar();
+                if (urlDestino) {
+                    window.location.href = urlDestino;
+                }
+            });
+
+            container.appendChild(toast);
+        }
+
+        // Intercepta navegações via links
+        document.addEventListener('click', (evento) => {
+            const link = evento.target.closest('a');
+            if (!link) return;
+
+            const href = link.getAttribute('href') || '';
+
+            // Se for âncora de seção do PageMaker (#secao-...), faz rolagem suave sem recarregar nem disparar alerta
+            if (href.includes('#secao-')) {
+                const secaoId = href.split('#')[1];
+                const alvo = document.getElementById(secaoId);
+                if (alvo) {
+                    evento.preventDefault();
+                    alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    document.querySelectorAll('#sb-titulo-PageMaker .sb-item').forEach(el => el.classList.remove('active'));
+                    const itemSidebar = link.closest('.sb-item') || link;
+                    itemSidebar.classList.add('active');
+                    return;
+                }
+            }
+
+            // Se não há alterações pendentes, permite navegação normal
+            if (!alteracoesPendentes) return;
+
+            // Ignora âncoras locais, javascript e nova aba
+            if (href.startsWith('#') || href.startsWith('javascript:') || link.target === '_blank') {
+                return;
+            }
+
+            // Bloqueia e exibe alerta do sistema no topo
+            evento.preventDefault();
+            devstudioConfirmarSaida(link.href);
+        });
+
         window.addEventListener('beforeunload', (evento) => {
             if (!alteracoesPendentes) return;
             evento.preventDefault();
-            evento.returnValue = 'Se você sair desta página, perderá as alterações feitas.';
+            evento.returnValue = '';
         });
         buscar('fileImagem')?.addEventListener('change', (evento) => {
             const arquivo = evento.target.files[0];

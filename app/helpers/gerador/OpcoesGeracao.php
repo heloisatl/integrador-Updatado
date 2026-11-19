@@ -1,6 +1,6 @@
 <?php
 
-namespace app\tools\gerador;
+namespace app\helpers\gerador;
 
 
  //Opções de geração escolhidas na etapa "Opções de Geração".

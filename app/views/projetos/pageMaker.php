@@ -14,7 +14,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </header>
 
-        <div class="pm-etapa">
+        <div class="pm-etapa" id="secao-cabecalho">
             <h3>Arquivo e cabeçalho</h3>
             <div class="pm-grade-formulario">
                 <div class="pm-campo">
@@ -58,7 +58,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </div>
 
-        <div class="pm-cartao">
+        <div class="pm-cartao" id="secao-layout">
             <h3>Layout e espaçamento</h3>
             <div class="pm-grade-formulario">
                 <div class="pm-campo">
@@ -100,7 +100,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </div>
 
-        <div class="pm-cartao">
+        <div class="pm-cartao" id="secao-design">
             <h3>Design avançado</h3>
             <div class="pm-grade-formulario">
                 <div class="pm-campo pm-campo-completo">
@@ -151,7 +151,7 @@ include_once(__DIR__ . "/../include/navigation.php");
         </div>
 
 
-        <div class="pm-cartao">
+        <div class="pm-cartao" id="secao-navegacao">
             <h3>Links de navegação</h3>
             <label class="pm-formulario-opcoes"><input type="checkbox" id="semNavegacao"> Página sem navegação</label>
             <div class="pm-grade-formulario pm-links-list">
@@ -174,7 +174,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </div>
 
-        <div class="pm-cartao">
+        <div class="pm-cartao" id="secao-conteudo">
             <h3>Conteúdo principal</h3>
             <div class="pm-grade-formulario pm-image-controls">
                 <div class="pm-campo pm-campo-completo">
@@ -210,7 +210,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </div>
 
-        <div class="pm-cartao">
+        <div class="pm-cartao" id="secao-elementos">
             <h3>Elementos extras</h3>
             <label class="pm-formulario-opcoes"><input type="checkbox" id="incluirLista"> Incluir lista de itens (ul)</label>
             <label class="pm-formulario-opcoes"><input type="checkbox" id="incluirTabela"> Incluir tabela HTML simples</label>
@@ -219,7 +219,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             <label class="pm-formulario-opcoes"><input type="checkbox" id="incluirFormulario"> Incluir formulário de contato</label>
         </div>
 
-        <div class="pm-cartao">
+        <div class="pm-cartao" id="secao-botao">
             <h3>Botão de destaque</h3>
             <div class="pm-grade-formulario">
                 <div class="pm-campo">
@@ -241,7 +241,7 @@ include_once(__DIR__ . "/../include/navigation.php");
             </div>
         </div>
 
-        <div class="pm-cartao">
+        <div class="pm-cartao" id="secao-previa">
             <h3>Prévia e Exportar</h3>
             <label>ORDEM DOS ELEMENTOS</label>
             <select id="ordemElementos">

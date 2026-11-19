@@ -31,8 +31,8 @@ include_once(__DIR__ . "/../include/navigation.php");
                 </article>
                 <article class="guia-passo"><span>2</span>
                     <div>
-                        <h4>Conecte ao seu banco</h4>
-                        <p>No <strong>MVC Creator</strong>, informe as credenciais de acesso ao MySQL para carregar seus bancos de dados.</p>
+                        <h4>Configure seu banco de dados</h4>
+                        <p>No <strong>MVC Creator</strong>, selecione bancos já modelados no <strong>PHPMeuAmigo</strong> ou conecte-se à sua instância local do MySQL com credenciais pré-carregadas.</p>
                     </div>
                 </article>
                 <article class="guia-passo"><span>3</span>
@@ -112,7 +112,7 @@ include_once(__DIR__ . "/../include/navigation.php");
                 </div>
             </div>
             <ol class="guia-lista-detalhada">
-                <li><strong>Conecte:</strong> no MVC Creator, informe as credenciais e carregue os bancos disponíveis.</li>
+                <li><strong>Conecte:</strong> no MVC Creator, utilize os bancos configurados no módulo PHPMeuAmigo ou conecte-se com as credenciais do seu MySQL local.</li>
                 <li><strong>Detecte tabelas:</strong> escolha o banco e consulte as tabelas encontradas automaticamente.</li>
                 <li><strong>Selecione as opções:</strong> o gerador prepara Model, Controller, Repository/DAO e Views de listagem, cadastro e edição.</li>
                 <li><strong>Veja a estrutura:</strong> confira as pastas e os arquivos antes de executar a geração.</li>

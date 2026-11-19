@@ -207,11 +207,12 @@
             <div class="form-group">
                 <label for="senha">Senha</label>
                 <div class="password-wrapper">
-                    <input type="password" id="senha" name="senha" required>
+                    <input type="password" id="senha" name="senha" minlength="10" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{10,}" title="A senha deve ter no mínimo 10 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais." required>
                     <button type="button" id="toggleSenha" class="btn-toggle-password" title="Mostrar/ocultar senha">
                         <i class="bi bi-eye" id="iconeOlho"></i>
                     </button>
                 </div>
+                <small style="color: #94a3b8; font-size: 11.5px; margin-top: 6px; display: block; line-height: 1.4;"><i class="bi bi-shield-lock"></i> Mínimo de 10 caracteres, contendo maiúsculas, minúsculas, números e caracteres especiais.</small>
             </div>
 
             <button type="submit" class="btn">Cadastre-se</button>

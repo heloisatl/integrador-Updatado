@@ -86,19 +86,26 @@ class UsuarioController extends Controller {
         $this->adminRequired();
 
         $dados = [
-            'nome' => $_POST['nome'] ?? '',
-            'email' => $_POST['email'] ?? '',
-            'senha' => $_POST['senha'] ?? '',
-            'usuario_banco' => $_POST['usuario_banco'] ?? '',
-            'servidor' => $_POST['servidor'] ?? '',
-            'tipo_perfil' => $_POST['tipo_perfil'] ?? '',
+            'nome' => trim((string)($_POST['nome'] ?? '')),
+            'email' => trim((string)($_POST['email'] ?? '')),
+            'senha' => (string)($_POST['senha'] ?? ''),
+            'usuario_banco' => trim((string)($_POST['usuario_banco'] ?? '')),
+            'servidor' => trim((string)($_POST['servidor'] ?? 'localhost')),
+            'tipo_perfil' => trim((string)($_POST['tipo_perfil'] ?? '')),
         ];
+
+        $erroSenha = \app\helpers\Validador::validarSenha($dados['senha']);
+        if ($erroSenha !== null) {
+            $dados['erro'] = 'Senha inválida: a senha deve conter no mínimo 10 caracteres, com letras maiúsculas, minúsculas, números e caracteres especiais.';
+            $this->view('usuarios/usuario_create', $dados);
+            return;
+        }
 
         if ($this->service->createUsuario($dados)) {
             \app\services\LogService::registrar("Novo usuário cadastrado pelo Administrador: " . $dados['nome']);
             $this->redirect(URL_BASE . '/usuarios');
         } else {
-            $dados['erro'] = 'Não foi possível cadastrar o usuário. Verifique os dados informados.';
+            $dados['erro'] = 'Não foi possível cadastrar o usuário. Verifique se o e-mail já está cadastrado ou se os campos estão corretos.';
             $this->view('usuarios/usuario_create', $dados);
         }
     }
@@ -108,6 +115,7 @@ class UsuarioController extends Controller {
 
         if (!isset($_GET['id'])) {
             $this->redirect(URL_BASE . '/usuarios');
+            return;
         }
 
         $id = (int) $_GET['id'];
@@ -115,6 +123,12 @@ class UsuarioController extends Controller {
 
         if (!$data['usuario']) {
             $this->redirect(URL_BASE . '/usuarios');
+            return;
+        }
+
+        if (!empty($_SESSION['flash_erro'])) {
+            $data['erro'] = $_SESSION['flash_erro'];
+            unset($_SESSION['flash_erro']);
         }
 
         $this->view('usuarios/usuario_edit', $data);
@@ -125,23 +139,72 @@ class UsuarioController extends Controller {
 
         if (!isset($_POST['id'])) {
             $this->redirect(URL_BASE . '/usuarios');
+            return;
         }
 
         $id = (int) $_POST['id'];
+        $nome = trim((string)($_POST['nome'] ?? ''));
+        $email = trim((string)($_POST['email'] ?? ''));
+        $senha = (string)($_POST['senha'] ?? '');
+        $tipoPerfilRaw = strtolower(trim((string)($_POST['tipo_perfil'] ?? '')));
+        $usuarioBanco = trim((string)($_POST['usuario_banco'] ?? ''));
+        $servidor = trim((string)($_POST['servidor'] ?? 'localhost'));
+
+        // Validação estrita no back-end (PHP) para campos obrigatórios
+        if ($nome === '') {
+            $_SESSION['flash_erro'] = 'O campo Nome Completo não pode estar vazio.';
+            $this->redirect(URL_BASE . '/usuarios/editar?id=' . $id);
+            return;
+        }
+
+        if ($email === '') {
+            $_SESSION['flash_erro'] = 'O campo Email não pode estar vazio.';
+            $this->redirect(URL_BASE . '/usuarios/editar?id=' . $id);
+            return;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['flash_erro'] = 'O endereço de e-mail informado não possui um formato válido.';
+            $this->redirect(URL_BASE . '/usuarios/editar?id=' . $id);
+            return;
+        }
+
+        // Validação das opções permitidas: admin ou normal (usuario)
+        $opcoesPermitidas = ['admin', 'normal', 'usuario', 'administrador'];
+        if ($tipoPerfilRaw === '' || !in_array($tipoPerfilRaw, $opcoesPermitidas, true)) {
+            $_SESSION['flash_erro'] = 'Tipo de Perfil inválido ou não selecionado. As opções permitidas são apenas "admin" ou "normal".';
+            $this->redirect(URL_BASE . '/usuarios/editar?id=' . $id);
+            return;
+        }
+
+        // Mapeamento normalizado
+        $tipoPerfil = ($tipoPerfilRaw === 'admin' || $tipoPerfilRaw === 'administrador') ? 'admin' : 'usuario';
+
+        // Validação robusta de senha caso enviada
+        if ($senha !== '') {
+            $erroSenha = \app\helpers\Validador::validarSenha($senha);
+            if ($erroSenha !== null) {
+                $_SESSION['flash_erro'] = 'A nova senha deve ter no mínimo 10 caracteres, contendo maiúsculas, minúsculas, números e caracteres especiais.';
+                $this->redirect(URL_BASE . '/usuarios/editar?id=' . $id);
+                return;
+            }
+        }
 
         $dados = [
-            'nome' => $_POST['nome'] ?? '',
-            'email' => $_POST['email'] ?? '',
-            'senha' => $_POST['senha'] ?? '',
-            'usuario_banco' => $_POST['usuario_banco'] ?? '',
-            'servidor' => $_POST['servidor'] ?? '',
-            'tipo_perfil' => $_POST['tipo_perfil'] ?? '',
+            'nome' => $nome,
+            'email' => $email,
+            'senha' => $senha,
+            'usuario_banco' => $usuarioBanco,
+            'servidor' => $servidor,
+            'tipo_perfil' => $tipoPerfil,
         ];
 
         if ($this->service->updateUsuario($id, $dados)) {
             \app\services\LogService::registrar("Dados de usuário atualizados pelo Administrador (ID: " . $id . ")");
+            $_SESSION['flash_sucesso'] = 'Usuário atualizado com sucesso.';
             $this->redirect(URL_BASE . '/usuarios');
         } else {
+            $_SESSION['flash_erro'] = 'Não foi possível atualizar o usuário. Verifique se o e-mail já pertence a outra conta.';
             $this->redirect(URL_BASE . '/usuarios/editar?id=' . $id);
         }
     }

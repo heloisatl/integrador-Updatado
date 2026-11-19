@@ -1,5 +1,5 @@
 <?php
-namespace app\tools;
+namespace app\helpers;
 
 use app\database\ConnectionFactory;
 use app\models\Atributo;

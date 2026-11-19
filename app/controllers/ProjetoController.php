@@ -11,10 +11,10 @@ use app\services\BancoService;
 use app\services\TabelaService;
 use app\services\AtributoService;
 
-use app\tools\SchemaInspector;
-use app\tools\gerador\FiltroTabelas;
-use app\tools\gerador\MotorGeracao;
-use app\tools\gerador\OpcoesGeracao;
+use app\helpers\SchemaInspector;
+use app\helpers\gerador\FiltroTabelas;
+use app\helpers\gerador\MotorGeracao;
+use app\helpers\gerador\OpcoesGeracao;
 use app\services\UsuarioService;
 
 class ProjetoController extends Controller{
@@ -48,7 +48,7 @@ class ProjetoController extends Controller{
     
     //Captura as credenciais de conexão MySQL local (enviadas via POST ou constantes padrão do ambiente).
      
-    private function obterCredenciaisLocaisRequest(): array {
+    private function obterCredenciaisRequest(): array {
         $userPadrao = defined('DB_USER') ? DB_USER : 'root';
         $passPadrao = defined('DB_PASS') ? DB_PASS : '';
         $hostRaw = trim((string) ($_POST['servidor'] ?? $_POST['host'] ?? $_POST['mvc_servidor'] ?? ''));
@@ -77,7 +77,7 @@ class ProjetoController extends Controller{
 
         // Modo Visitante: reaproveita o leitor de bancos locais do PHPMeuAmigo (SHOW DATABASES via PDO)
         try {
-            $cred = $this->obterCredenciaisLocaisRequest();
+            $cred = $this->obterCredenciaisRequest();
             $bancos = BancoService::listarBancosMysqlLocal($cred['host'], $cred['porta'], $cred['user'], $cred['pass']);
             $options = '';
             foreach ($bancos as $nomeBanco) {
@@ -109,8 +109,8 @@ class ProjetoController extends Controller{
             }
 
             // Modo Visitante: leitura direta das tabelas do banco local em memória (sem persistência)
-            $cred = $this->obterCredenciaisLocaisRequest();
-            $inspecao = $this->inspecionarBancoLocalEmMemoria(
+            $cred = $this->obterCredenciaisRequest();
+            $inspecao = $this->inspecionarBancoLocal(
                 $banco,
                 $cred['host'],
                 $cred['porta'],
@@ -129,7 +129,7 @@ class ProjetoController extends Controller{
     //Inspeciona diretamente um banco MySQL local em memória (SHOW TABLES, SHOW COLUMNS e KEY_COLUMN_USAGE)
     //e monta instâncias temporárias de Tabela e Atributo sem tocar nas tabelas internas do DevStudio.
      
-    private function inspecionarBancoLocalEmMemoria(string $nomeBanco,string $host = 'localhost',string $porta = '3306',string $user = 'root',string $pass = '',bool $carregarAtributos = true,?FiltroTabelas $filtroTabelas = null): array {
+    private function inspecionarBancoLocal(string $nomeBanco,string $host = 'localhost',string $porta = '3306',string $user = 'root',string $pass = '',bool $carregarAtributos = true,?FiltroTabelas $filtroTabelas = null): array {
         if ($nomeBanco === '' || !preg_match('/^[a-zA-Z0-9_]+$/', $nomeBanco)) {
             throw new \InvalidArgumentException('Selecione um banco de dados local válido antes de gerar o sistema.');
         }
@@ -256,7 +256,7 @@ class ProjetoController extends Controller{
     
     //Monta o contexto de geração para usuários autenticados (lê metadados persistidos no DevStudio).
      
-    private function montarContextoGeracaoAutenticado(): array {
+    private function montarContextoAutenticado(): array {
         $banco = trim((string) ($_POST['banco'] ?? ''));
         if ($banco === '') {
             throw new \InvalidArgumentException('Selecione um banco de dados antes de gerar o sistema.');
@@ -296,22 +296,22 @@ class ProjetoController extends Controller{
             ];
         }
 
-        return $this->montarContextoGeracaoVisitante();
+        return $this->montarContextoVisitante();
     }
 
     
     //Monta o contexto de geração em memória para o Modo Visitante (RN 01 / FA01: zero persistência).
     
-    private function montarContextoGeracaoVisitante(): array {
+    private function montarContextoVisitante(): array {
         $nomeBanco = trim((string) ($_POST['banco'] ?? ''));
         if ($nomeBanco === '') {
             throw new \InvalidArgumentException('Selecione um banco de dados antes de gerar o sistema.');
         }
 
-        $cred = $this->obterCredenciaisLocaisRequest();
+        $cred = $this->obterCredenciaisRequest();
         $filtro = FiltroTabelas::fromRequest($_POST['tabelasDesativadas'] ?? null);
 
-        $inspecao = $this->inspecionarBancoLocalEmMemoria(
+        $inspecao = $this->inspecionarBancoLocal(
             $nomeBanco,
             $cred['host'],
             $cred['porta'],
@@ -349,9 +349,9 @@ class ProjetoController extends Controller{
 
     private function montarContextoGeracao(): array {
         if ($this->usuarioEstaAutenticado()) {
-            return $this->montarContextoGeracaoAutenticado();
+            return $this->montarContextoAutenticado();
         }
-        return $this->montarContextoGeracaoVisitante();
+        return $this->montarContextoVisitante();
     }
 
     //Pré-visualização da etapa "Estrutura de Arquivos": devolve exatamente os caminhos que o
@@ -405,7 +405,7 @@ class ProjetoController extends Controller{
      
     private function gerarMvcAutenticado(string $nomeProjeto): void {
         try {
-            $ctx = $this->montarContextoGeracaoAutenticado();
+            $ctx = $this->montarContextoAutenticado();
         } catch (\InvalidArgumentException $e) {
             echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
             return;
@@ -450,7 +450,7 @@ class ProjetoController extends Controller{
             $motor = new MotorGeracao();
             $arquivos = $motor->gerar($ctx['tabelas'], $ctx['atributos'], $ctx['opcoes'], $pastaOutput, $ctx['banco']);
 
-            $geradorZip = new \app\tools\gerador\GeradorZip();
+            $geradorZip = new \app\helpers\gerador\GeradorZip();
             if (!$geradorZip->compactarPasta($pastaOutput, $arquivoZip)) {
                 throw new \RuntimeException('Não foi possível criar o arquivo .zip do projeto.');
             }
@@ -459,7 +459,7 @@ class ProjetoController extends Controller{
 
             $downloadUrl = URL_BASE . '/projetos/downloadZip?file=' . urlencode($nomeZip) . '&name=' . urlencode($nomeProjeto . '.zip');
             \app\services\LogService::registrar("Geração de sistema MVC Creator: " . $nomeProjeto);
-            $this->registrarProjetoNoHistorico($nomeProjeto, 'MVC Creator', [
+            $this->registrarHistorico($nomeProjeto, 'MVC Creator', [
                 'nome'        => $nomeProjeto,
                 'arquivo'     => $nomeZip,
                 'downloadUrl' => $downloadUrl,
@@ -490,10 +490,10 @@ class ProjetoController extends Controller{
     //Compila em diretório temporário isolado (`temp/guest_{hash}`) e remove imediatamente após o download.
      
     private function gerarMvcVisitante(string $nomeProjeto): void {
-        $this->limparTemporariosVisitanteExpirados();
+        $this->limparTemporariosExpirados();
 
         try {
-            $ctx = $this->montarContextoGeracaoVisitante();
+            $ctx = $this->montarContextoVisitante();
         } catch (\Throwable $e) {
             echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
             return;
@@ -515,7 +515,7 @@ class ProjetoController extends Controller{
             $motor = new MotorGeracao();
             $arquivos = $motor->gerar($ctx['tabelas'], $ctx['atributos'], $ctx['opcoes'], $pastaBuild, $ctx['banco']);
 
-            $geradorZip = new \app\tools\gerador\GeradorZip();
+            $geradorZip = new \app\helpers\gerador\GeradorZip();
             if (!$geradorZip->compactarPasta($pastaBuild, $arquivoZip)) {
                 throw new \RuntimeException('Não foi possível criar o arquivo .zip temporário do projeto.');
             }
@@ -551,7 +551,7 @@ class ProjetoController extends Controller{
     /**
      * Remove pastas temporárias de visitantes expiradas (mais de 10 minutos) caso algum download tenha sido cancelado.
      */
-    private function limparTemporariosVisitanteExpirados(int $ttlSegundos = 600): void {
+    private function limparTemporariosExpirados(int $ttlSegundos = 600): void {
         $pastaTempRaiz = __DIR__ . '/../projetos/temp';
         if (!is_dir($pastaTempRaiz)) {
             return;
@@ -595,7 +595,7 @@ class ProjetoController extends Controller{
             $nomeDownload = preg_replace('/-\d+(\.zip)$/i', '$1', $nomeZip);
         }
 
-        $geradorZip = new \app\tools\gerador\GeradorZip();
+        $geradorZip = new \app\helpers\gerador\GeradorZip();
 
         // Fluxo de download temporário para visitante: entrega via HTTP e apaga imediatamente do servidor
         if ($guestHash !== '' && strlen($guestHash) === 16) {
@@ -634,7 +634,7 @@ class ProjetoController extends Controller{
         return $usuarioId;
     }
 
-    private function getHistoricoUsuarioIdOpcional(): ?int {
+    private function getUsuarioIdHistorico(): ?int {
         $usuario = $_SESSION['usuario_logado'] ?? null;
         if ($usuario && method_exists($usuario, 'getIdUsuario')) {
             $id = (int) $usuario->getIdUsuario();
@@ -650,7 +650,7 @@ class ProjetoController extends Controller{
         return __DIR__ . '/../projetos/historicos/usuario_' . $usuarioId . '.json';
     }
 
-    private function migrarHistoricoCompartilhadoAdmin(string $caminhoHistoricoUsuario): void {
+    private function migrarHistoricoAdmin(string $caminhoHistoricoUsuario): void {
         $usuario = $_SESSION['usuario_logado'] ?? null;
         $caminhoLegado = __DIR__ . '/../projetos/historico.json';
         $caminhoMigrado = __DIR__ . '/../projetos/historico_compartilhado_migrado.json';
@@ -672,7 +672,7 @@ class ProjetoController extends Controller{
             }
         }
 
-        $historicoAdmin = $this->aplicarLimiteIndependentePorModulo($historicoAdmin, 10);
+        $historicoAdmin = $this->aplicarLimiteModulos($historicoAdmin, 10);
         $this->salvarJsonArrayValido($caminhoHistoricoUsuario, $historicoAdmin);
 
         if (!@rename($caminhoLegado, $caminhoMigrado)) {
@@ -721,7 +721,7 @@ class ProjetoController extends Controller{
             }
         }
 
-        $usuarioIdItem = isset($item['usuario_id']) ? (int) $item['usuario_id'] : ($fallbackUsuarioId ?? ($this->getHistoricoUsuarioIdOpcional() ?? 0));
+        $usuarioIdItem = isset($item['usuario_id']) ? (int) $item['usuario_id'] : ($fallbackUsuarioId ?? ($this->getUsuarioIdHistorico() ?? 0));
 
         return [
             'id' => $id,
@@ -753,7 +753,7 @@ class ProjetoController extends Controller{
             if (preg_match('/usuario_(\d+)\.json$/', $caminho, $m)) {
                 $usuarioId = (int) $m[1];
             } else {
-                $usuarioId = $this->getHistoricoUsuarioIdOpcional();
+                $usuarioId = $this->getUsuarioIdHistorico();
             }
         }
 
@@ -790,7 +790,7 @@ class ProjetoController extends Controller{
             if (preg_match('/usuario_(\d+)\.json$/', $caminho, $m)) {
                 $usuarioId = (int) $m[1];
             } else {
-                $usuarioId = $this->getHistoricoUsuarioIdOpcional();
+                $usuarioId = $this->getUsuarioIdHistorico();
             }
         }
 
@@ -820,7 +820,7 @@ class ProjetoController extends Controller{
         return $itens;
     }
 
-    private function aplicarLimiteIndependentePorModulo(array $historico, int $limite = 10): array {
+    private function aplicarLimiteModulos(array $historico, int $limite = 10): array {
         $mvc = [];
         $pm = [];
         $outros = [];
@@ -842,7 +842,7 @@ class ProjetoController extends Controller{
             $excedentesMvc = array_slice($mvc, $limite);
             $mvc = array_slice($mvc, 0, $limite);
             foreach ($excedentesMvc as $itemExcedente) {
-                $this->expurgarArquivosEDadosProjeto($itemExcedente);
+                $this->expurgarProjeto($itemExcedente);
             }
         }
 
@@ -851,7 +851,7 @@ class ProjetoController extends Controller{
             $excedentesPm = array_slice($pm, $limite);
             $pm = array_slice($pm, 0, $limite);
             foreach ($excedentesPm as $itemExcedentePm) {
-                $this->expurgarArquivosEDadosProjeto($itemExcedentePm);
+                $this->expurgarProjeto($itemExcedentePm);
             }
         }
 
@@ -859,10 +859,10 @@ class ProjetoController extends Controller{
         return $this->ordenarPorData($resultado);
     }
 
-    private function expurgarArquivosEDadosProjeto(array $item): void {
+    private function expurgarProjeto(array $item): void {
         $nomeProjeto = trim((string)($item['nome'] ?? ''));
         $modulo = trim((string)($item['modulo'] ?? ''));
-        $usuarioId = (int)($item['usuario_id'] ?? ($this->getHistoricoUsuarioIdOpcional() ?? 0));
+        $usuarioId = (int)($item['usuario_id'] ?? ($this->getUsuarioIdHistorico() ?? 0));
         $payload = is_array($item['conteudo'] ?? null) ? $item['conteudo'] : [];
 
         // 1. Apaga arquivo ZIP físico se existir em diretórios de download
@@ -903,20 +903,20 @@ class ProjetoController extends Controller{
         }
     }
 
-    private function sincronizarHistoricoEArquivos(): array {
+    private function sincronizarHistorico(): array {
         $caminhoHistoricoUsuario = $this->getHistoricoStoragePath();
-        $this->migrarHistoricoCompartilhadoAdmin($caminhoHistoricoUsuario);
+        $this->migrarHistoricoAdmin($caminhoHistoricoUsuario);
         $historico = $this->lerJsonArrayValido($caminhoHistoricoUsuario);
 
         // 1. Remove automaticamente projetos com mais de 60 dias de armazenamento
-        $historico = $this->aplicarRemocaoAutomaticaPorIdade($historico, 60);
+        $historico = $this->removerPorIdade($historico, 60);
 
         // 2. Mantém os limites independentes por módulo (até 10 por módulo)
-        $historico = $this->aplicarLimiteIndependentePorModulo($historico, 10);
+        $historico = $this->aplicarLimiteModulos($historico, 10);
         $this->salvarJsonArrayValido($caminhoHistoricoUsuario, $historico);
 
         // 3. Executa a limpeza global de projetos expirados no banco e arquivos físicos
-        $this->limparProjetosExpiradosSistema(60);
+        $this->limparExpiradosSistema(60);
 
         return $historico;
     }
@@ -925,7 +925,7 @@ class ProjetoController extends Controller{
      * Remove automaticamente do histórico itens com mais de 60 dias de existência,
      * expurgando arquivos físicos e registros associados para liberar armazenamento.
      */
-    private function aplicarRemocaoAutomaticaPorIdade(array $historico, int $dias = 60): array {
+    private function removerPorIdade(array $historico, int $dias = 60): array {
         $resultado = [];
         $agora = time();
         $limiteSegundos = $dias * 86400;
@@ -937,7 +937,7 @@ class ProjetoController extends Controller{
             if ($criadoEm) {
                 $tempoCriacao = strtotime($criadoEm);
                 if ($tempoCriacao > 0 && ($agora - $tempoCriacao) >= $limiteSegundos) {
-                    $this->expurgarArquivosEDadosProjeto($norm);
+                    $this->expurgarProjeto($norm);
                     \app\services\LogService::registrar("Remoção automática de projeto expirado (> 60 dias): " . ($norm['nome'] ?? 'Projeto'));
                     continue;
                 }
@@ -953,7 +953,7 @@ class ProjetoController extends Controller{
      * Varre todo o sistema (banco de dados, arquivos JSON de todos os usuários e pasta de downloads)
      * removendo qualquer projeto armazenado há mais de 60 dias para evitar sobrecarga no servidor.
      */
-    public function limparProjetosExpiradosSistema(int $dias = 60): int {
+    public function limparExpiradosSistema(int $dias = 60): int {
         $totalRemovidos = 0;
 
         // 1. Limpeza no banco de dados (tabela projeto e estilos associados)
@@ -976,7 +976,7 @@ class ProjetoController extends Controller{
             foreach ($arquivosJson as $caminhoJson) {
                 $itens = $this->lerJsonArrayValido($caminhoJson);
                 $totalAntes = count($itens);
-                $itensLimpos = $this->aplicarRemocaoAutomaticaPorIdade($itens, $dias);
+                $itensLimpos = $this->removerPorIdade($itens, $dias);
                 if (count($itensLimpos) !== $totalAntes) {
                     $totalRemovidos += ($totalAntes - count($itensLimpos));
                     $this->salvarJsonArrayValido($caminhoJson, $itensLimpos);
@@ -1004,8 +1004,15 @@ class ProjetoController extends Controller{
         return $totalRemovidos;
     }
 
+    /**
+     * Alias de compatibilidade para nome antigo de função.
+     */
+    public function limparProjetosExpiradosSistema(int $dias = 60): int {
+        return $this->limparExpiradosSistema($dias);
+    }
+
     private function obterItemPorId(string $id): ?array {
-        foreach ($this->sincronizarHistoricoEArquivos() as $item) {
+        foreach ($this->sincronizarHistorico() as $item) {
             if (($item['id'] ?? null) === $id) {
                 return $item;
             }
@@ -1025,7 +1032,7 @@ class ProjetoController extends Controller{
         return null;
     }
 
-    private function registrarProjetoNoHistorico(string $nome, string $modulo, array $conteudo = []): array {
+    private function registrarHistorico(string $nome, string $modulo, array $conteudo = []): array {
         $nome = trim((string) $nome);
         $modulo = trim((string) $modulo);
 
@@ -1037,7 +1044,7 @@ class ProjetoController extends Controller{
             return ['sucesso' => false, 'mensagem' => 'Módulo inválido para o histórico.'];
         }
 
-        $historico = $this->sincronizarHistoricoEArquivos();
+        $historico = $this->sincronizarHistorico();
 
         $novoItem = [
             'id' => 'proj_' . substr(hash('sha256', uniqid((string) microtime(true), true)), 0, 12),
@@ -1048,14 +1055,14 @@ class ProjetoController extends Controller{
             'conteudo' => $conteudo,
         ];
         $historico[] = $novoItem;
-        $historico = $this->aplicarLimiteIndependentePorModulo($historico, 10);
+        $historico = $this->aplicarLimiteModulos($historico, 10);
         $this->salvarJsonArrayValido($this->getHistoricoStoragePath(), $historico);
 
         \app\services\LogService::registrar("Projeto salvo no histórico (" . $modulo . "): " . $nome);
         return ['sucesso' => true, 'item' => $novoItem];
     }
 
-    public function registrarProjetoHistoricoJson(): void {
+    public function registrarHistoricoJson(): void {
         $this->autenticacaoJsonRequired();
 
         $dados = json_decode(file_get_contents('php://input'), true);
@@ -1072,13 +1079,24 @@ class ProjetoController extends Controller{
         }
 
         header('Content-Type: application/json');
-        echo json_encode($this->registrarProjetoNoHistorico($nome, $modulo, $conteudo));
+        echo json_encode($this->registrarHistorico($nome, $modulo, $conteudo));
         exit();
+    }
+
+    /**
+     * Alias de compatibilidade retroativa.
+     */
+    public function registrarProjetoHistoricoJson(): void {
+        $this->registrarHistoricoJson();
+    }
+
+    private function registrarProjetoNoHistorico(string $nome, string $modulo, array $conteudo = []): array {
+        return $this->registrarHistorico($nome, $modulo, $conteudo);
     }
 
     public function listarHistoricoJson(): void {
         $this->autenticacaoJsonRequired();
-        $historico = $this->sincronizarHistoricoEArquivos();
+        $historico = $this->sincronizarHistorico();
 
         header('Content-Type: application/json');
         echo json_encode([
@@ -1139,7 +1157,7 @@ class ProjetoController extends Controller{
                 }
                 $zip->close();
 
-                $geradorZip = new \app\tools\gerador\GeradorZip();
+                $geradorZip = new \app\helpers\gerador\GeradorZip();
                 $geradorZip->enviarDownload($arquivoZip, $nomeBase . '.zip', true, $tempDir);
                 exit();
             }
@@ -1174,11 +1192,11 @@ class ProjetoController extends Controller{
 
         // Se o arquivo .zip físico não existir no servidor, reconstrói o pacote do projeto
         if ($caminhoZip === null || !file_exists($caminhoZip)) {
-            $caminhoZip = $this->reconstruirZipProjetoHistorico($item, $arquivoOriginal, $nomeProjetoLimpo);
+            $caminhoZip = $this->reconstruirZipHistorico($item, $arquivoOriginal, $nomeProjetoLimpo);
         }
 
         if ($caminhoZip !== null && file_exists($caminhoZip)) {
-            $geradorZip = new \app\tools\gerador\GeradorZip();
+            $geradorZip = new \app\helpers\gerador\GeradorZip();
             $geradorZip->enviarDownload($caminhoZip, $nomeDownloadZip, false);
             exit();
         }
@@ -1223,7 +1241,7 @@ class ProjetoController extends Controller{
         return null;
     }
 
-    private function reconstruirZipProjetoHistorico(array $item, string $arquivoOriginal, string $nomeProjetoLimpo): ?string {
+    private function reconstruirZipHistorico(array $item, string $arquivoOriginal, string $nomeProjetoLimpo): ?string {
         $pastaDownloads = __DIR__ . '/../projetos/downloads';
         if (!is_dir($pastaDownloads)) {
             @mkdir($pastaDownloads, 0755, true);
@@ -1273,9 +1291,9 @@ class ProjetoController extends Controller{
                             $atributosPorTabela[$tabelaId] = $attrs;
                             $tabelaId++;
                         }
-                        $opcoes = new \app\tools\gerador\OpcoesGeracao(true, true, true, true, true, false, true, true);
+                        $opcoes = new \app\helpers\gerador\OpcoesGeracao(true, true, true, true, true, false, true, true);
                         $bancoData = ['nome_banco' => $bancoNome, 'id_banco' => $payload['banco_id'] ?? null];
-                        $motor = new \app\tools\gerador\MotorGeracao();
+                        $motor = new \app\helpers\gerador\MotorGeracao();
                         $motor->gerar($tabelasObjs, $atributosPorTabela, $opcoes, $pastaBuild, $bancoData);
                         $gerouComMotor = true;
                     }
@@ -1303,12 +1321,12 @@ class ProjetoController extends Controller{
                 }
             }
 
-            file_put_contents($pastaBuild . '/app/core/Autoload.php', \app\tools\gerador\GeradorCore::gerarAutoload());
-            file_put_contents($pastaBuild . '/app/core/Controller.php', \app\tools\gerador\GeradorCore::gerarController());
-            file_put_contents($pastaBuild . '/app/core/Router.php', \app\tools\gerador\GeradorCore::gerarRouter());
-            file_put_contents($pastaBuild . '/app/database/ConnectionFactory.php', \app\tools\gerador\GeradorRepositorio::gerarConnectionFactory(false));
-            file_put_contents($pastaBuild . '/app/config/config.php', \app\tools\gerador\GeradorConfig::gerarConfig('localhost', '3306', $bancoNome ?: 'meu_banco', 'root', false));
-            file_put_contents($pastaBuild . '/public/index.php', \app\tools\gerador\geradorIndex::gerarIndex([], true, true, false));
+            file_put_contents($pastaBuild . '/app/core/Autoload.php', \app\helpers\gerador\GeradorCore::gerarAutoload());
+            file_put_contents($pastaBuild . '/app/core/Controller.php', \app\helpers\gerador\GeradorCore::gerarController());
+            file_put_contents($pastaBuild . '/app/core/Router.php', \app\helpers\gerador\GeradorCore::gerarRouter());
+            file_put_contents($pastaBuild . '/app/database/ConnectionFactory.php', \app\helpers\gerador\GeradorRepositorio::gerarConnectionFactory(false));
+            file_put_contents($pastaBuild . '/app/config/config.php', \app\helpers\gerador\GeradorConfig::gerarConfig('localhost', '3306', $bancoNome ?: 'meu_banco', 'root', false));
+            file_put_contents($pastaBuild . '/public/index.php', \app\helpers\gerador\geradorIndex::gerarIndex([], true, true, false));
 
             $nomeExibicao = (string)($item['nome'] ?? $nomeProjetoLimpo);
             $readme = "# Projeto: {$nomeExibicao}\n\n";
@@ -1336,7 +1354,7 @@ class ProjetoController extends Controller{
             }
         }
 
-        $geradorZip = new \app\tools\gerador\GeradorZip();
+        $geradorZip = new \app\helpers\gerador\GeradorZip();
         $compactou = $geradorZip->compactarPasta($pastaBuild, $arquivoZipDestino);
         $this->excluirDiretorioRecursivo($pastaTemp);
 
@@ -1355,10 +1373,10 @@ class ProjetoController extends Controller{
             $this->redirect(URL_BASE . '/projetos/historico');
         }
 
-        $historico = $this->sincronizarHistoricoEArquivos();
+        $historico = $this->sincronizarHistorico();
         $item = $this->removerItemPorId($historico, $id);
         if ($item !== null) {
-            $this->expurgarArquivosEDadosProjeto($item);
+            $this->expurgarProjeto($item);
             \app\services\LogService::registrar("Projeto removido do histórico (ID: " . $id . ")");
         }
         if ($item === null) {
@@ -1373,9 +1391,9 @@ class ProjetoController extends Controller{
     public function limparHistorico(): void {
         $this->autenticacaoRequired();
 
-        $historico = $this->sincronizarHistoricoEArquivos();
+        $historico = $this->sincronizarHistorico();
         foreach ($historico as $item) {
-            $this->expurgarArquivosEDadosProjeto($item);
+            $this->expurgarProjeto($item);
         }
         $this->salvarJsonArrayValido($this->getHistoricoStoragePath(), []);
         \app\services\LogService::registrar("Histórico de projetos foi limpo pelo usuário.");
@@ -1500,13 +1518,13 @@ class ProjetoController extends Controller{
                 }
             }
 
-            $geradorZip = new \app\tools\gerador\GeradorZip();
+            $geradorZip = new \app\helpers\gerador\GeradorZip();
             if (!$geradorZip->compactarPasta($pastaConteudo, $arquivoZip)) {
                 throw new \RuntimeException('Não foi possível criar o arquivo ZIP.');
             }
 
             // Registra a criação da página no histórico do usuário
-            $this->registrarProjetoNoHistorico($nome, 'PageMaker', [
+            $this->registrarHistorico($nome, 'PageMaker', [
                 'nome'        => $nome,
                 'arquivo'     => $nome . '.html',
                 'html'        => $html,
@@ -1521,6 +1539,91 @@ class ProjetoController extends Controller{
             $this->excluirDiretorioRecursivo($diretorioTemp);
             http_response_code($e instanceof \InvalidArgumentException ? 400 : 500);
             header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
+        }
+    }
+
+    public function salvarMvcHistorico(): void {
+        $this->autenticacaoJsonRequired();
+
+        $nomeProjeto = trim((string) ($_POST['nomeProjeto'] ?? 'meu_projeto'));
+        if ($nomeProjeto === '') {
+            $nomeProjeto = 'meu_projeto';
+        }
+        $nomeProjeto = preg_replace('/[^A-Za-z0-9_-]/', '', $nomeProjeto) ?: 'meu_projeto';
+
+        try {
+            $ctx = $this->montarContextoAutenticado();
+        } catch (\InvalidArgumentException $e) {
+            echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
+            return;
+        } catch (\Throwable $e) {
+            echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
+            return;
+        }
+
+        $idUsuario = (int) $_SESSION['usuario_logado']->getIdUsuario();
+        $idBanco = isset($ctx['banco']['id_banco']) && $ctx['banco']['id_banco'] !== null ? (int) $ctx['banco']['id_banco'] : null;
+
+        $projeto = new Projeto(
+            $idUsuario,
+            $idBanco ?? 1,
+            null,
+            $nomeProjeto,
+            date('Y-m-d H:i:s'),
+            [
+                'comentarios' => $ctx['opcoes']->comentariosAtivos() ? 1 : 0,
+                'views'       => $ctx['opcoes']->ativa('views') ? 1 : 0,
+            ],
+            null
+        );
+
+        $resultadoInsert = $this->getProjetoService()->insert($projeto);
+        if (!$resultadoInsert) {
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Não foi possível salvar o projeto no banco de dados.']);
+            return;
+        }
+
+        $pastaOutput = __DIR__ . '/../projetos/temp/' . $nomeProjeto;
+        $nomeZip = $nomeProjeto . '-' . $resultadoInsert . '.zip';
+        $pastaDownloads = __DIR__ . '/../projetos/downloads/';
+        if (!is_dir($pastaDownloads)) {
+            mkdir($pastaDownloads, 0755, true);
+        }
+        $arquivoZip = $pastaDownloads . $nomeZip;
+
+        try {
+            $this->excluirDiretorioRecursivo($pastaOutput);
+
+            $motor = new \app\helpers\gerador\MotorGeracao();
+            $arquivos = $motor->gerar($ctx['tabelas'], $ctx['atributos'], $ctx['opcoes'], $pastaOutput, $ctx['banco']);
+
+            $geradorZip = new \app\helpers\gerador\GeradorZip();
+            if (!$geradorZip->compactarPasta($pastaOutput, $arquivoZip)) {
+                throw new \RuntimeException('Não foi possível criar o arquivo .zip do projeto.');
+            }
+
+            $this->excluirDiretorioRecursivo($pastaOutput);
+
+            $downloadUrl = URL_BASE . '/projetos/downloadZip?file=' . urlencode($nomeZip) . '&name=' . urlencode($nomeProjeto . '.zip');
+            \app\services\LogService::registrar("Projeto MVC Creator persistido no histórico: " . $nomeProjeto);
+            $this->registrarHistorico($nomeProjeto, 'MVC Creator', [
+                'nome'        => $nomeProjeto,
+                'arquivo'     => $nomeZip,
+                'downloadUrl' => $downloadUrl,
+                'banco'       => $ctx['banco']['nome_banco'] ?? 'banco',
+                'banco_id'    => $ctx['banco']['id_banco'] ?? 1,
+                'gerado_em'   => date('c'),
+                'tipo'        => 'MVC Creator',
+            ]);
+
+            echo json_encode([
+                'sucesso'     => true,
+                'mensagem'    => 'Projeto "' . $nomeProjeto . '" salvo no Histórico com sucesso!',
+                'redirect'    => URL_BASE . '/projetos/historico',
+            ]);
+        } catch (\Throwable $e) {
+            $this->excluirDiretorioRecursivo($pastaOutput);
             echo json_encode(['sucesso' => false, 'mensagem' => $e->getMessage()]);
         }
     }
@@ -1541,7 +1644,7 @@ class ProjetoController extends Controller{
             return;
         }
 
-        $item = $this->registrarProjetoNoHistorico($nome, 'PageMaker', [
+        $item = $this->registrarHistorico($nome, 'PageMaker', [
             'nome'        => $nome,
             'arquivo'     => $nome . '.html',
             'html'        => $html,
@@ -1562,7 +1665,7 @@ class ProjetoController extends Controller{
 
     public function historico(): void {
         $this->autenticacaoRequired();
-        $historico = $this->sincronizarHistoricoEArquivos();
+        $historico = $this->sincronizarHistorico();
         $this->view('projetos/historico', ['historico' => $historico]);
     }
 

@@ -1,5 +1,5 @@
 <?php
-namespace app\tools\gerador;
+namespace app\helpers\gerador;
 
 
 //Gera o app/config/config.php do projeto exportado

@@ -81,8 +81,8 @@ Este documento descreve detalhadamente as melhorias, correções de regras de ne
      - Remoção de arquivos `.zip` associados aos projetos expirados em `app/projetos/downloads/` e diretórios públicos.
   3. **Histórico em JSON (`usuario_{id}.json`)**:
      - Método `aplicarRemocaoAutomaticaPorIdade` em `ProjetoController`, que inspeciona carimbos de data/hora (`criado_em`) e remove registros com mais de 60 dias.
-  4. **Rotina Global e Executável CLI**:
-     - Método `limparProjetosExpiradosSistema` acionado na sincronização periódica de histórico e script dedicado em linha de comando [`app/database/scripts/limpar_projetos_antigos.php`](file:///c:/xampp/xampp2/htdocs/integrador-Updatado/app/database/scripts/limpar_projetos_antigos.php) para execução via agendador de tarefas / crontab.
+  4. **Rotina Global Integrada**:
+     - Método `limparProjetosExpiradosSistema` acionado automaticamente na sincronização periódica de histórico e rotinas do sistema.
 - **Transparência Visual**:
   - Mensagens informativas de retenção de 60 dias atualizadas nas telas do Histórico ([`app/views/projetos/historico.php`](file:///c:/xampp/xampp2/htdocs/integrador-Updatado/app/views/projetos/historico.php)) e de geração do MVC Creator ([`app/views/projetos/mvcCreator/gerar.php`](file:///c:/xampp/xampp2/htdocs/integrador-Updatado/app/views/projetos/mvcCreator/gerar.php)).
 

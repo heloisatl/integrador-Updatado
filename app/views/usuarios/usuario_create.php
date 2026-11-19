@@ -50,7 +50,8 @@
 
             <div class="form-group">
                 <label for="senha">Senha *</label>
-                <input type="password" id="senha" name="senha" placeholder="Digite uma senha segura" required>
+                <input type="password" id="senha" name="senha" minlength="10" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{10,}" title="A senha deve ter no mínimo 10 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais." placeholder="Mínimo 10 caracteres" required>
+                <span class="form-help-inline" style="display: block; margin-top: 4px; font-size: 11.5px; color: var(--muted);"><i class="bi bi-shield-lock"></i> Mínimo 10 caracteres (maiúsculas, minúsculas, números e especiais).</span>
             </div>
 
             <div class="form-group">
