@@ -10,10 +10,27 @@ use app\models\Tabela;
 
 class GeradorDatabase {
    
+    /**
+     * Ajusta o nome do banco de dados para incluir o sufixo _devstudio,
+     * garantindo que o banco original do usuário não seja substituído.
+     */
+    public static function ajustarNomeBanco(string $nomeBanco): string {
+        $nome = trim($nomeBanco);
+        if ($nome === '') {
+            return 'meu_banco_devstudio';
+        }
+        $sufixo = '_devstudio';
+        if (substr(strtolower($nome), -strlen($sufixo)) === $sufixo) {
+            return $nome;
+        }
+        return $nome . $sufixo;
+    }
+
     public function gerarDatabase(string $nomeBanco, array $tabelas, array $atributosPorTabela): string {
+        $nomeBancoFinal = self::ajustarNomeBanco($nomeBanco);
         $sql = "-- Script gerado automaticamente pelo DevStudio (MVC Creator)\n";
-        $sql .= "CREATE DATABASE IF NOT EXISTS " . $this->ident($nomeBanco) . " DEFAULT CHARACTER SET utf8mb4;\n";
-        $sql .= "USE " . $this->ident($nomeBanco) . ";\n\n";
+        $sql .= "CREATE DATABASE IF NOT EXISTS " . $this->ident($nomeBancoFinal) . " DEFAULT CHARACTER SET utf8mb4;\n";
+        $sql .= "USE " . $this->ident($nomeBancoFinal) . ";\n\n";
 
         // id_atributo => [tabela, coluna, pk/unique] apenas das tabelas selecionadas
         $mapa = [];

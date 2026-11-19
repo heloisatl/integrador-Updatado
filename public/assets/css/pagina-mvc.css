@@ -1,7 +1,9 @@
 /* ==========================================================================
    Padronização Visual da Barra Lateral do MVC Creator (Hover e Active)
    ========================================================================== */
-#sb-titulo-MVC {
+#mvc-creator #sb-titulo-MVC,
+#mvcCreator #sb-titulo-MVC,
+body#mvc-creator #sb-titulo-MVC {
     display: flex;
     flex-direction: column;
     gap: 4px;

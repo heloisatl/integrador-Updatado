@@ -730,6 +730,11 @@ body#phpmeuamigo #sb-titulo-PHPMeuAmigo {
     display: flex;
 }
 
+body#phpmeuamigo #sb-titulo-MVC,
+body#phpmeuamigo #sb-titulo-PageMaker {
+    display: none !important;
+}
+
 #perfil #sb-titulo-perfil,
 body#perfil #sb-titulo-perfil {
     display: flex;

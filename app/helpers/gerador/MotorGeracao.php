@@ -81,10 +81,12 @@ class MotorGeracao {
         }
         if ($opcoes->ativa('config')) {
             // config.php: recebe comentários didáticos sobre credenciais e ambiente se ativo
+            $nomeBancoOriginal = (string) ($banco['nome_banco'] ?? '');
+            $nomeBancoConfig = GeradorDatabase::ajustarNomeBanco($nomeBancoOriginal !== '' ? $nomeBancoOriginal : 'meu_banco');
             $plano['app/config/config.php'] = fn() => GeradorConfig::gerarConfig(
                 (string) ($banco['host'] ?? 'localhost'),
                 (string) ($banco['porta'] ?? '3306'),
-                (string) ($banco['nome_banco'] ?? ''),
+                $nomeBancoConfig,
                 (string) ($banco['usuario_banco'] ?? 'root'),
                 $comComentarios,
                 (string) ($banco['senha_banco'] ?? '')

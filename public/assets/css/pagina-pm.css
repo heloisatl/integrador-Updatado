@@ -1,7 +1,9 @@
 /* ==========================================================================
    Padronização Visual da Barra Lateral do PageMaker
    ========================================================================== */
-#sb-titulo-PageMaker {
+#pagemaker #sb-titulo-PageMaker,
+#pageMaker #sb-titulo-PageMaker,
+body#pagemaker #sb-titulo-PageMaker {
     display: flex;
     flex-direction: column;
     gap: 4px;
