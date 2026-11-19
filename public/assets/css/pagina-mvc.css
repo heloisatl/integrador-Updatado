@@ -32,13 +32,18 @@ body#mvc-creator #sb-titulo-MVC {
 }
 
 #sb-titulo-MVC .sb-item.active,
+#sb-titulo-MVC .sb-item:focus,
+#sb-titulo-MVC .sb-item:focus-visible,
 .sidebar .sb-item.active {
     background-color: var(--accent) !important;
     color: #ffffff !important;
     font-weight: 500;
+    outline: none;
 }
 
 #sb-titulo-MVC .sb-item.active:hover,
+#sb-titulo-MVC .sb-item:focus:hover,
+#sb-titulo-MVC .sb-item:focus-visible:hover,
 .sidebar .sb-item.active:hover {
     background-color: var(--accent-h, #4a59df) !important;
     color: #ffffff !important;

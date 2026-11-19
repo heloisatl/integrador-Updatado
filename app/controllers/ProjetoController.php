@@ -1325,7 +1325,7 @@ class ProjetoController extends Controller{
             file_put_contents($pastaBuild . '/app/core/Controller.php', \app\helpers\gerador\GeradorCore::gerarController());
             file_put_contents($pastaBuild . '/app/core/Router.php', \app\helpers\gerador\GeradorCore::gerarRouter());
             file_put_contents($pastaBuild . '/app/database/ConnectionFactory.php', \app\helpers\gerador\GeradorRepositorio::gerarConnectionFactory(false));
-            $bancoNomeAjustado = \app\helpers\gerador\GeradorDatabase::ajustarNomeBanco($bancoNome ?: 'meu_banco');
+            $bancoNomeAjustado = ($bancoNome ?: 'meu_banco') . '_devstudio';
             file_put_contents($pastaBuild . '/app/config/config.php', \app\helpers\gerador\GeradorConfig::gerarConfig('localhost', '3306', $bancoNomeAjustado, 'root', false));
             file_put_contents($pastaBuild . '/public/index.php', \app\helpers\gerador\geradorIndex::gerarIndex([], true, true, false));
 

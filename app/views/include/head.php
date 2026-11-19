@@ -722,6 +722,14 @@ if (strpos($requestPath, '/perfil') !== false) {
     $bodyId = 'usuarios';
 } elseif (strpos($requestPath, '/logs') !== false) {
     $bodyId = 'logs';
+} elseif (strpos($requestPath, 'mvc-creator') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'mvc-creator') !== false) {
+    $bodyId = 'mvc-creator';
+} elseif (strpos($requestPath, 'pagemaker') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'pagemaker') !== false) {
+    $bodyId = 'pagemaker';
+} elseif (strpos($requestPath, 'phpmeuamigo') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'phpmeuamigo') !== false) {
+    $bodyId = 'phpmeuamigo';
+} elseif (strpos($requestPath, 'historico') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'historico') !== false) {
+    $bodyId = 'historico';
 } elseif ($bodyId === 'explorar') {
     $bodyId = 'guia';
 } elseif ($bodyId === '' || $bodyId === 'index.php') {

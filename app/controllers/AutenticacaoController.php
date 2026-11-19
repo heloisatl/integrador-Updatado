@@ -196,22 +196,36 @@ class AutenticacaoController extends Controller
             unset($_SESSION['flash_erro']);
         }
 
+        if (!empty($_SESSION['flash_dados'])) {
+            $dados['nome'] = $_SESSION['flash_dados']['nome'] ?? '';
+            $dados['email'] = $_SESSION['flash_dados']['email'] ?? '';
+            $dados['senha'] = $_SESSION['flash_dados']['senha'] ?? '';
+            unset($_SESSION['flash_dados']);
+        }
+
         $this->view('autenticacao/cadastro', $dados);
     }
 
     public function salvarCadastro(): void
     {
         $senha = (string) ($_POST['senha'] ?? '');
+        $dadosForm = [
+            'nome' => trim((string) ($_POST['nome'] ?? '')),
+            'email' => trim((string) ($_POST['email'] ?? '')),
+            'senha' => $senha,
+        ];
+
         $erroSenha = \app\helpers\Validador::validarSenha($senha);
         if ($erroSenha !== null) {
             $_SESSION['flash_erro'] = 'Senha inválida: a senha deve conter no mínimo 10 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.';
+            $_SESSION['flash_dados'] = $dadosForm;
             $this->redirect(URL_BASE . '/cadastro');
             return;
         }
 
         $dados = [
-            'nome' => trim((string) ($_POST['nome'] ?? '')),
-            'email' => trim((string) ($_POST['email'] ?? '')),
+            'nome' => $dadosForm['nome'],
+            'email' => $dadosForm['email'],
             'senha' => $senha,
             'tipo_perfil' => 'usuario',
             'usuario_banco' => '',
@@ -226,6 +240,7 @@ class AutenticacaoController extends Controller
         }
 
         $_SESSION['flash_erro'] = 'Não foi possível realizar o cadastro. Verifique se o e-mail já está cadastrado ou se os dados estão corretos.';
+        $_SESSION['flash_dados'] = $dadosForm;
         $this->redirect(URL_BASE . '/cadastro');
     }
 

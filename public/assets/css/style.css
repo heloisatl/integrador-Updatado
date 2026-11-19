@@ -658,16 +658,25 @@ body > .site-footer {
 .sidebar .sb-item.active,
 .sb-section .sb-item.active,
 #sb-titulo-MVC .sb-item.active,
-#sb-titulo-PageMaker .sb-item.active {
+#sb-titulo-PageMaker .sb-item.active,
+#sb-titulo-MVC .sb-item:focus,
+#sb-titulo-MVC .sb-item:focus-visible,
+#sb-titulo-PageMaker .sb-item:focus,
+#sb-titulo-PageMaker .sb-item:focus-visible {
     background-color: var(--accent) !important;
     color: #ffffff !important;
     font-weight: 500;
+    outline: none;
 }
 
 .sidebar .sb-item.active:hover,
 .sb-section .sb-item.active:hover,
 #sb-titulo-MVC .sb-item.active:hover,
-#sb-titulo-PageMaker .sb-item.active:hover {
+#sb-titulo-PageMaker .sb-item.active:hover,
+#sb-titulo-MVC .sb-item:focus:hover,
+#sb-titulo-MVC .sb-item:focus-visible:hover,
+#sb-titulo-PageMaker .sb-item:focus:hover,
+#sb-titulo-PageMaker .sb-item:focus-visible:hover {
     background-color: var(--accent-h, #4a59df) !important;
     color: #ffffff !important;
 }

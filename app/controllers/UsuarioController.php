@@ -233,11 +233,17 @@ class UsuarioController extends Controller {
 
         $nomePadrao = is_array($dadosAntigos) && isset($dadosAntigos['nome']) ? (string) $dadosAntigos['nome'] : $usuario->getNome();
         $emailPadrao = is_array($dadosAntigos) && isset($dadosAntigos['email']) ? (string) $dadosAntigos['email'] : $usuario->getEmail();
+        $senhaAtualPadrao = is_array($dadosAntigos) && isset($dadosAntigos['senha_atual']) ? (string) $dadosAntigos['senha_atual'] : '';
+        $senhaNovaPadrao = is_array($dadosAntigos) && isset($dadosAntigos['senha_nova']) ? (string) $dadosAntigos['senha_nova'] : '';
+        $confirmarSenhaPadrao = is_array($dadosAntigos) && isset($dadosAntigos['confirmar_senha']) ? (string) $dadosAntigos['confirmar_senha'] : '';
 
         $dados = [
             'nomeExibicao' => strtoupper($usuario->getNome()),
             'nomeUsuario' => $nomePadrao,
             'emailUsuario' => $emailPadrao,
+            'senhaAtual' => $senhaAtualPadrao,
+            'senhaNova' => $senhaNovaPadrao,
+            'confirmarSenha' => $confirmarSenhaPadrao,
             'avatarUrl' => $avatarPath ? URL_BASE . '/perfil/avatar?v=' . filemtime($avatarPath) : null,
             'mensagemPerfil' => is_array($flash) ? ($flash['mensagem'] ?? '') : '',
             'tipoMensagemPerfil' => is_array($flash) ? ($flash['tipo'] ?? 'sucesso') : 'sucesso',
@@ -266,7 +272,13 @@ class UsuarioController extends Controller {
             $resultadoAvatar = $this->salvarAvatarEnviado($usuarioAtual->getIdUsuario(), $_FILES['avatar']);
             if (!$resultadoAvatar['sucesso']) {
                 $_SESSION['perfil_flash'] = ['tipo' => 'erro', 'mensagem' => $resultadoAvatar['mensagem']];
-                $_SESSION['perfil_dados_antigos'] = ['nome' => $_POST['nome'] ?? '', 'email' => $_POST['email'] ?? ''];
+                $_SESSION['perfil_dados_antigos'] = [
+                    'nome' => $_POST['nome'] ?? '',
+                    'email' => $_POST['email'] ?? '',
+                    'senha_atual' => $_POST['senha_atual'] ?? '',
+                    'senha_nova' => $_POST['senha_nova'] ?? '',
+                    'confirmar_senha' => $_POST['confirmar_senha'] ?? '',
+                ];
                 $this->redirect(URL_BASE . '/perfil');
             }
             $avatarNovo = $resultadoAvatar['caminho'];
@@ -278,7 +290,13 @@ class UsuarioController extends Controller {
                 unlink($avatarNovo);
             }
             $_SESSION['perfil_flash'] = ['tipo' => 'erro', 'mensagem' => $resultado['mensagem']];
-            $_SESSION['perfil_dados_antigos'] = ['nome' => $_POST['nome'] ?? '', 'email' => $_POST['email'] ?? ''];
+            $_SESSION['perfil_dados_antigos'] = [
+                'nome' => $_POST['nome'] ?? '',
+                'email' => $_POST['email'] ?? '',
+                'senha_atual' => $_POST['senha_atual'] ?? '',
+                'senha_nova' => $_POST['senha_nova'] ?? '',
+                'confirmar_senha' => $_POST['confirmar_senha'] ?? '',
+            ];
             $this->redirect(URL_BASE . '/perfil');
         }
 

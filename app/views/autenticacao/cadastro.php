@@ -193,21 +193,21 @@
             <div class="alert"><?= htmlspecialchars($erro) ?></div>
         <?php endif; ?>
 
-        <form method="POST" action="<?= URL_BASE ?>/cadastro/salvar">
+        <form method="POST" action="<?= URL_BASE ?>/cadastro/salvar" novalidate>
             <div class="form-group">
                 <label for="nome">Nome</label>
-                <input type="text" id="nome" name="nome" required>
+                <input type="text" id="nome" name="nome" value="<?= htmlspecialchars($nome ?? '') ?>">
             </div>
 
             <div class="form-group">
                 <label for="email">E-mail</label>
-                <input type="email" id="email" name="email" required>
+                <input type="email" id="email" name="email" value="<?= htmlspecialchars($email ?? '') ?>">
             </div>
 
             <div class="form-group">
                 <label for="senha">Senha</label>
                 <div class="password-wrapper">
-                    <input type="password" id="senha" name="senha" minlength="10" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{10,}" title="A senha deve ter no mínimo 10 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais." required>
+                    <input type="password" id="senha" name="senha" value="<?= htmlspecialchars($senha ?? '') ?>">
                     <button type="button" id="toggleSenha" class="btn-toggle-password" title="Mostrar/ocultar senha">
                         <i class="bi bi-eye" id="iconeOlho"></i>
                     </button>

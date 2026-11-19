@@ -10,6 +10,14 @@ if (strpos($requestPath, '/perfil') !== false) {
     $paginaAtual = 'usuarios';
 } elseif (strpos($requestPath, '/logs') !== false) {
     $paginaAtual = 'logs';
+} elseif (strpos($requestPath, 'mvc-creator') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'mvc-creator') !== false) {
+    $paginaAtual = 'mvc-creator';
+} elseif (strpos($requestPath, 'pagemaker') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'pagemaker') !== false) {
+    $paginaAtual = 'pagemaker';
+} elseif (strpos($requestPath, 'phpmeuamigo') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'phpmeuamigo') !== false) {
+    $paginaAtual = 'phpmeuamigo';
+} elseif (strpos($requestPath, 'historico') !== false || strpos($_SERVER['REQUEST_URI'] ?? '', 'historico') !== false) {
+    $paginaAtual = 'historico';
 } elseif ($paginaAtual === 'explorar') {
     $paginaAtual = 'guia';
 } elseif ($paginaAtual === '' || $paginaAtual === 'index.php') {

@@ -30,7 +30,7 @@ $ehAdmin = $ehAdmin ?? false;
             </div>
         <?php endif; ?>
 
-        <form class="perfil-formulario" action="<?= URL_BASE ?>/perfil/atualizar" method="post" enctype="multipart/form-data" id="perfilForm">
+        <form class="perfil-formulario" action="<?= URL_BASE ?>/perfil/atualizar" method="post" enctype="multipart/form-data" id="perfilForm" novalidate>
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfPerfil, ENT_QUOTES, 'UTF-8') ?>">
 
             <section class="perfil-card">
@@ -92,7 +92,7 @@ $ehAdmin = $ehAdmin ?? false;
                 <div class="perfil-campo">
                     <label for="perfil-senha-atual">Senha atual</label>
                     <div class="perfil-senha-wrapper">
-                        <input type="password" id="perfil-senha-atual" name="senha_atual" autocomplete="current-password">
+                        <input type="password" id="perfil-senha-atual" name="senha_atual" autocomplete="current-password" value="<?= htmlspecialchars($senhaAtual ?? '', ENT_QUOTES, 'UTF-8') ?>">
                         <button type="button" class="perfil-btn-toggle-senha" data-target="perfil-senha-atual" title="Mostrar/ocultar senha" aria-label="Mostrar/ocultar senha">
                             <i class="bi bi-eye"></i>
                         </button>
@@ -102,7 +102,7 @@ $ehAdmin = $ehAdmin ?? false;
                     <div class="perfil-campo">
                         <label for="perfil-senha-nova">Nova senha</label>
                         <div class="perfil-senha-wrapper">
-                            <input type="password" id="perfil-senha-nova" name="senha_nova" autocomplete="new-password" minlength="10" aria-describedby="perfilRegraSenha">
+                            <input type="password" id="perfil-senha-nova" name="senha_nova" autocomplete="new-password" aria-describedby="perfilRegraSenha" value="<?= htmlspecialchars($senhaNova ?? '', ENT_QUOTES, 'UTF-8') ?>">
                             <button type="button" class="perfil-btn-toggle-senha" data-target="perfil-senha-nova" title="Mostrar/ocultar senha" aria-label="Mostrar/ocultar senha">
                                 <i class="bi bi-eye"></i>
                             </button>
@@ -111,7 +111,7 @@ $ehAdmin = $ehAdmin ?? false;
                     <div class="perfil-campo">
                         <label for="perfil-confirmar-senha">Confirmar nova senha</label>
                         <div class="perfil-senha-wrapper">
-                            <input type="password" id="perfil-confirmar-senha" name="confirmar_senha" autocomplete="new-password" minlength="10">
+                            <input type="password" id="perfil-confirmar-senha" name="confirmar_senha" autocomplete="new-password" value="<?= htmlspecialchars($confirmarSenha ?? '', ENT_QUOTES, 'UTF-8') ?>">
                             <button type="button" class="perfil-btn-toggle-senha" data-target="perfil-confirmar-senha" title="Mostrar/ocultar senha" aria-label="Mostrar/ocultar senha">
                                 <i class="bi bi-eye"></i>
                             </button>

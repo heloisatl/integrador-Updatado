@@ -27,7 +27,7 @@
         </div>
     <?php endif; ?>
 
-    <form method="POST" action="<?= URL_BASE ?>/usuarios/salvar">
+    <form method="POST" action="<?= URL_BASE ?>/usuarios/salvar" novalidate>
         <!-- Seção 1: Credenciais e Dados de Acesso -->
         <div class="form-section-header">
             <span class="form-section-icon"><i class="bi bi-person-badge"></i></span>
@@ -50,7 +50,7 @@
 
             <div class="form-group">
                 <label for="senha">Senha *</label>
-                <input type="password" id="senha" name="senha" minlength="10" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{10,}" title="A senha deve ter no mínimo 10 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais." placeholder="Mínimo 10 caracteres" required>
+                <input type="password" id="senha" name="senha" placeholder="Mínimo 10 caracteres" value="<?= htmlspecialchars($senha ?? '') ?>">
                 <span class="form-help-inline" style="display: block; margin-top: 4px; font-size: 11.5px; color: var(--muted);"><i class="bi bi-shield-lock"></i> Mínimo 10 caracteres (maiúsculas, minúsculas, números e especiais).</span>
             </div>
 

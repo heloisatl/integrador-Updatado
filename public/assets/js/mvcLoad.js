@@ -669,3 +669,34 @@ function salvarMvcNoHistorico() {
     };
     xhr.send(data);
 }
+
+// Destaca ativamente o item da etapa atual na barra lateral do MVC Creator
+(function sincronizarEtapaSidebarMvc() {
+    function atualizarEtapaAtiva() {
+        const params = new URLSearchParams(window.location.search);
+        const stepAtual = params.get('step') || 'configurar';
+        const container = document.getElementById('sb-titulo-MVC');
+        if (!container) return;
+
+        const itens = container.querySelectorAll('.sb-item');
+        itens.forEach(function (item) {
+            const href = item.getAttribute('href') || '';
+            if (href.includes('step=' + stepAtual)) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+
+            item.addEventListener('click', function () {
+                itens.forEach(el => el.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', atualizarEtapaAtiva);
+    } else {
+        atualizarEtapaAtiva();
+    }
+})();
