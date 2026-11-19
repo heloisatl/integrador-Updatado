@@ -12,6 +12,9 @@ class ProjetoService{
         $this->projetoRepository = new ProjetoRepository();
     }
 
+    public function lastInsertId(){
+        return $this->projetoRepository->lastInsertId();
+    }
 
     public function getDatabases($dsn,$user,$pass){
         return $this->projetoRepository->getDatabases($dsn,$user,$pass);

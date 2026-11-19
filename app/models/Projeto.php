@@ -16,13 +16,13 @@ class Projeto{
     private ?int $ultimo_download;
 
     
-    public function __construct($user,$banco,$estilo,$nome,$dataC,array $options,$ultDown){
+    public function __construct($user,$banco,$estilo,$nome,$dataC,array $options,$ultDown,$caminho_armazenamento){
         $this->fk_usuario = $user;
         $this->fk_banco = $banco;
         $this->fk_estilo = $estilo;
         $this->nome_projeto = $nome;
         $this->data_criacao = $dataC;
-        $this->caminho_armazenamento = "caminho/ainda/nao/definido/";
+        $this->caminho_armazenamento = $caminho_armazenamento;
 
         foreach($options as $key=>$value){
             $this->$key = $value;

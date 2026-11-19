@@ -12,6 +12,12 @@ class ProjetoRepository{
         $this->conn =  ConnectionFactory::getConnection();
     }
 
+    public function lastInsertId(){
+        $sql = "SELECT id_projeto FROM projeto ORDER BY id_projeto DESC LIMIT 1";
+        $stm = $this->conn->prepare($sql);
+        $stm->execute();
+        return (int)$stm->fetchColumn();
+    }
 
     public function insert(Projeto $projeto){
         $sql = "INSERT INTO `mvc_creator`.`projeto`(id_usuario,fk_banco,fk_estilo,nome_projeto,data_criacao,prazo_de_vida,caminho_armazenamento,comentarios,views,ultimo_download)

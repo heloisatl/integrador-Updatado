@@ -417,6 +417,8 @@ class ProjetoController extends Controller{
         $idUsuario = (int) $_SESSION['usuario_logado']->getIdUsuario();
         $idBanco = isset($ctx['banco']['id_banco']) && $ctx['banco']['id_banco'] !== null ? (int) $ctx['banco']['id_banco'] : null;
 
+        
+        $idUltimoProjeto = $this->getProjetoService()->lastInsertId();
         $projeto = new Projeto(
             $idUsuario,
             $idBanco ?? 1,
@@ -427,7 +429,8 @@ class ProjetoController extends Controller{
                 'comentarios' => $ctx['opcoes']->comentariosAtivos() ? 1 : 0,
                 'views'       => $ctx['opcoes']->ativa('views') ? 1 : 0,
             ],
-            null
+            null,
+            realpath(__DIR__ . '/../projetos/downloads/') . $nomeProjeto ."-".$idUltimoProjeto+1 .".zip"
         );
 
         $resultadoInsert = $this->getProjetoService()->insert($projeto);
@@ -1189,7 +1192,8 @@ class ProjetoController extends Controller{
         }
 
         $caminhoZip = $this->localizarZipProjeto($arquivoOriginal, $nomeProjetoLimpo);
-
+        
+        
         // Se o arquivo .zip físico não existir no servidor, reconstrói o pacote do projeto
         if ($caminhoZip === null || !file_exists($caminhoZip)) {
             $caminhoZip = $this->reconstruirZipHistorico($item, $arquivoOriginal, $nomeProjetoLimpo);
@@ -1566,6 +1570,8 @@ class ProjetoController extends Controller{
         $idUsuario = (int) $_SESSION['usuario_logado']->getIdUsuario();
         $idBanco = isset($ctx['banco']['id_banco']) && $ctx['banco']['id_banco'] !== null ? (int) $ctx['banco']['id_banco'] : null;
 
+        
+        $idUltimoProjeto = $this->getProjetoService()->lastInsertId();
         $projeto = new Projeto(
             $idUsuario,
             $idBanco ?? 1,
@@ -1576,8 +1582,12 @@ class ProjetoController extends Controller{
                 'comentarios' => $ctx['opcoes']->comentariosAtivos() ? 1 : 0,
                 'views'       => $ctx['opcoes']->ativa('views') ? 1 : 0,
             ],
-            null
+            null,
+            realpath(__DIR__ . '/../projetos/downloads/') . $nomeProjeto ."-".$idUltimoProjeto+1 .".zip"
         );
+
+    
+      
 
         $resultadoInsert = $this->getProjetoService()->insert($projeto);
         if (!$resultadoInsert) {
@@ -1587,7 +1597,7 @@ class ProjetoController extends Controller{
 
         $pastaOutput = __DIR__ . '/../projetos/temp/' . $nomeProjeto;
         $nomeZip = $nomeProjeto . '-' . $resultadoInsert . '.zip';
-        $pastaDownloads = __DIR__ . '/../projetos/downloads/';
+        $pastaDownloads = $pastaDownloads = __DIR__ . '/../projetos/downloads/';
         if (!is_dir($pastaDownloads)) {
             mkdir($pastaDownloads, 0755, true);
         }
@@ -1723,7 +1733,7 @@ class ProjetoController extends Controller{
         }
         $this->obrigatorios($validador,$nome,$server,$user,$pass,$banco);
         
-        $projeto = new Projeto(1,1,null,$nome,date("Y-m-d H:i:s"),$options,null);
+        $projeto = new Projeto(1,1,null,$nome,date("Y-m-d H:i:s"),$options,null,"sdasd");
 
 
         $this->getProjetoService()->insert($projeto);
